@@ -1,0 +1,178 @@
+/* General styles for the body */
+body {
+    background-color: #101820; /* Dark background for the app */
+    color: white; /* Default text color for the entire body */
+    margin: 50px; /* Remove default margin */
+    font-family: Arial, sans-serif; /* Use a clean font */
+}
+
+/* General styles for the tabs container */
+.tabs-container {
+    width: 100%; /* Full width for the container */
+    display: flex;
+    justify-content: center; /* Center the tabs horizontally */
+    position: absolute; /* Positioning at the top */
+    top: 0; /* Aligns to the top */
+}
+
+/* Style for each tab */
+.Tab {
+    border-radius: 10px; /* Round corners for the tabs */
+    transition: background-color 0.3s; /* Smooth transition for hover effects */
+    text-align: center; /* Center text horizontally */
+    line-height: 20px; /* Vertical alignment for text */
+    background-color: #DAA520; /* Default background color */
+    color: white; /* Default text color */
+    width: 80%; /* Width of each tab */
+    height: 30px; /* Fixed height for all tabs */
+    display: flex; /* Use flexbox for alignment */
+    align-items: center; /* Center vertically */
+    justify-content: center; /* Center horizontally */
+    margin-right: 10px; /* Space to the right between tabs */
+
+    /* Font styling */
+    font-size: 30px; /* Larger text size */
+    font-weight: bold; /* Bold text */
+}
+
+/* Remove right margin for the last tab */
+.Tab:last-child {
+    margin-right: 0; /* No margin on the right side of the last tab */
+}
+
+/* Custom styles for the Tabs */
+.Tab.selected {
+    background-color: #DAA520; /* Background for the selected tab */
+    color: black; /* Text color for the selected tab */
+    font-weight: bold;  /* Highlight selected tab */
+}
+
+/* Adjust hover properties if needed */
+.Tab:hover {
+    background-color: #FFC300; /* Lighter shade on hover for better UX */
+}
+
+
+
+/* Base button styles */
+.button {
+    display: inline-block; /* Ensures the button can adjust size */
+    padding: 10px 20px; /* Spacing inside the button */
+    font-size: 16px; /* Text size */
+    font-weight: bold; /* Text boldness */
+    color: black; /* Text color */
+    background-color: #FFD700; /* Background color */
+    border: none; /* No border */
+    border-radius: 5px; /* Slightly rounded corners */
+    cursor: pointer; /* Pointer cursor on hover */
+    text-align: center; /* Center text */
+    text-decoration: none; /* No underline */
+    transition: all 0.3s ease; /* Smooth transition for hover effects */
+}
+
+/* Hover effect */
+.button:hover {
+    background-color: #0056b3; /* Darker shade for hover */
+    transform: scale(1.05); /* Slightly increase size on hover */
+}
+
+/* Active state */
+.button:active {
+    transform: scale(0.95); /* Slightly decrease size on click */
+}
+
+
+.modal-backdrop {
+    background-color: rgba(30, 30, 30, 0.9) !important; /* Dark background with some transparency */
+}
+
+
+.top-modal {
+    position: fixed;
+    top: 10%; /* Change this value to adjust vertical positioning */
+    left: 50%;
+    transform: translateX(-50%); /* Center the modal horizontally */
+    z-index: 1050; /* Ensure it appears above other content */
+    width: 100%; /* Width can be adjusted as necessary */
+    max-width: 600px; /* Set a maximum width */
+    background-color: #1e1e1e; /* Set modal background color */
+    color: white; /* Change text color for better readability */
+    border-radius: 8px; /* Optional: round the corners */
+    border: 2px solid gold; /* Set gold border */
+    box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); /* Optional: add a shadow for emphasis */
+}
+
+.modal-footer {
+    display: flex;
+    justify-content: flex-start; /* Aligns footer items to the left */
+}
+
+
+/* Dropdowns classe */
+
+.dropdown-container {
+    display: flex; /* Use flexbox to layout elements */
+    flex-direction: column; /* Stack elements vertically */
+    gap: 10px; /* Consistent spacing between elements */
+    width: 100%; /* Full-width container */
+}
+
+
+
+/* Specific styles for the selected value in the dropdown */
+.dash-dropdown .Select-control {
+    background-color: #FFD700 !important; /* Background */
+    color: white !important; /* Text color */
+    box-shadow: none !important; /* Remove box shadow */
+}
+
+/* Styles for dropdown menu options */
+.dash-dropdown .Select-menu {
+    background-color: #1e1e1e !important; /* Menu background color */
+    color: white !important; /* Menu text color */
+}
+
+/* Styling for selected value in the dropdown control */
+.dash-dropdown .Select-value {
+    color: black !important; /* Text color */
+    background-color: #FFD700; /* Background color */
+    font-weight: bold; /* Make text bold */
+    opacity: 1; /* Ensure it's fully opaque */
+}
+
+.dash-dropdown .Select-menu .Select-option.is-selected {
+    color: black !important; /* Ensure the selected option text color is black */ 
+    background-color: #FFD700 !important; /* Background color for selected items */
+    font-weight: bold; /* Keep text bold */
+}
+
+
+
+/* End Dropdowns classe */
+
+
+
+/* Input classe */
+
+/* General styles for input fields that need to match the dropdown theme */
+.dash-input.dynamic-width {
+    background-color: #1e1e1e !important; /* Dark background matching dropdown */
+    color: #f8f9fa !important; /* White text color */
+    border: 1px solid #555 !important; /* Dark border */
+    border-radius: 5px !important; /* Rounded corners */
+    height: 40px !important; /* Set a consistent height */
+    box-sizing: border-box; /* Ensure padding is included in width calculations */
+}
+
+/* Placeholder text for inputs */
+.dash-input.dynamic-width::placeholder {
+    color: rgba(255, 255, 255, 0.5) !important; /* Lightened color for placeholder text */
+}
+
+/* Style adjustments for focused state */
+.dash-input.dynamic-width:focus {
+    outline: none; /* Remove default focus outline */
+    border: 2px solid #FFC300 !important; /* Highlight border color on focus */
+}
+
+/* End Input classe */
