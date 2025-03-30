@@ -40,7 +40,7 @@ import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 
-import Exploratory_Data_Analysis.Function_dataframe as fd
+import Exploratory_Data_Analysis.function_dataframe as fd
 import Exploratory_Data_Analysis.data_plot_preparation as dpp
 import Exploratory_Data_Analysis.figure_layout as fl
 

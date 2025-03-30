@@ -42,17 +42,17 @@ import plotly.express as px
 import plotly.io as pio
 
 import Exploratory_Data_Analysis.web_interface_style as wis
-import Exploratory_Data_Analysis.Dash_callback_ids as dci
+import Exploratory_Data_Analysis.dash_callback_ids as dci
 
 import Exploratory_Data_Analysis.table_dropdown_style as tds
 import Exploratory_Data_Analysis.figure_creation as fc
 import Exploratory_Data_Analysis.data_plot_preparation as dpp
 import Exploratory_Data_Analysis.figure_dropdown_style as fds
 
-import Exploratory_Data_Analysis.Hypothesis_Testing_Methods as htm
+import Exploratory_Data_Analysis.hypothesis_testing_methods as htm
 
 import Exploratory_Data_Analysis.open_dataframe as od
-import Exploratory_Data_Analysis.Function_dataframe as fd
+import Exploratory_Data_Analysis.function_dataframe as fd
 
 """#=============================================================================
    #=============================================================================
@@ -61,7 +61,7 @@ import Exploratory_Data_Analysis.Function_dataframe as fd
 # Save the project on github with: !bash ./save_project_on_git.sh
 GitHub_adress= 'https://github.com/KantMG/Exploratory_Data_Analysis'
 
-def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, Large_file_memory: False):   
+def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_memory: False):   
 
     
     start_time = time.time()      

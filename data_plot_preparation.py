@@ -20,7 +20,7 @@ Created on Mon Oct  7 17:50:57 2024
 import pandas as pd
 import numpy as np
 
-import Exploratory_Data_Analysis.Function_dataframe as fd
+import Exploratory_Data_Analysis.function_dataframe as fd
 
 """#=============================================================================
    #=============================================================================
