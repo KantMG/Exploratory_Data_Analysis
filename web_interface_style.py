@@ -68,17 +68,17 @@ def web_interface_style():
     app.layout = html.Div([
         html.Div(
             className='header-container',
-            style={'display': 'flex', 'alignItems': 'center', 'padding': '20px'},  # Flexbox layout for header
+            style={'display': 'flex', 'alignItems': 'center', 'padding': '0px'},  # Flexbox layout for header
             children=[
-                # IMDB Logo
-                html.Img(src='assets/maxresdefault.jpg', style={'height': '140px', 'borderRadius': '14px 14px 14px 14px'}),  # Replace with your logo's path and adjust the size
+                # Logo
+                html.Img(src='assets/Exploratory Data Analysis_logo.png', style={'height': '180px', 'borderRadius': '18px 18px 18px 18px'}),  # Replace with your logo's path and adjust the size
                 # Container for Tabs
                 html.Div(
                     className='tabs-container',
                     children=[
                         # Tabs Component
                         dcc.Tabs(id='tabs', value='tab-1', style={'height': 'auto'}, children=[
-                            dcc.Tab(id='tabs-1', label='🏠 Home', value='tab-1', 
+                            dcc.Tab(id='tabs-1', label='🔍 Profiling', value='tab-1', 
                                      style={
                                          'backgroundColor': '#DAA520',  # Dark black background
                                          'color': 'black',
@@ -142,38 +142,8 @@ def web_interface_style():
                                          # 'borderRight': '2px solid white',
                                      }
                                      ),
-                            dcc.Tab(id='tabs-3', label='🔍 Data table', value='tab-3', 
-                                     style={
-                                         'backgroundColor': '#DAA520',
-                                         'color': 'black',
-                                         'border': 'none',
-                                         'borderRadius': '10px 10px 10px 10px',  
-                                         'width': '200px',                    # Width relative to container
-                                         'height': '100px',                  # Adjusted height'
-                                         'display': 'flex',
-                                         'alignItems': 'center',            # Center vertically
-                                         'justifyContent': 'center',        # Center horizontally
-                                         'font-size': '20px',   #Text size */
-                                         'font-weight': 'bold',   #Text size */
-                                        },
-                                     selected_style={
-                                         'backgroundColor': '#228B22',
-                                         'color': 'black',
-                                         'border': 'none',
-                                         'borderRadius': '10px 10px 10px 10px',  
-                                         'width': '200px',                    # Width relative to container
-                                         'height': '100px',                  # Adjusted height
-                                         'display': 'flex',
-                                         'alignItems': 'center',            # Center vertically
-                                         'justifyContent': 'center',        # Center horizontally
-                                         'font-size': '20px',   #Text size */
-                                         'font-weight': 'bold',   #Text size */
-                                         # 'borderBottom': '2px solid white',
-                                         # 'borderRight': '2px solid white',
-                                     }
-                                     ),
                             ])
-                ], style={'display': 'flex', 'justifyContent': 'center', 'alignItems': 'flex-start', 'height': '50px', 'margin': '50px'}  # Adjust according to height
+                ], style={'display': 'flex', 'justifyContent': 'center', 'alignItems': 'flex-start', 'height': '50px', 'margin': '30px'}  # Adjust according to height
         
                ),
             ]

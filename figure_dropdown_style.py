@@ -75,10 +75,12 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
     """
 
     # Get column names
-    columns = df.columns
+    columns = df.columns.tolist()
+    columns.append('count')
+    print("New cols",columns)
     
     # Get the list of y function
-    function_on_y = ["Avg", "Avg on the ordinate", "Weight on y"]
+    function_on_y = ["Avg", "Weight on y"]
     
     # Get the type of graph
     graph_type = ["Histogram", "Curve", "Scatter", "Boxes", "Colormesh"]
@@ -87,7 +89,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
     dim_type = ["1D", "2D", "3D"]
     
     # Get the list of axis and graph function
-    axis = ["x", "y", "z", "Func on y", "Func on z", "Graph", "Dim"]
+    axis = ["x", "y", "z", "t", "Func on y", "Func on z", "Func on t", "Graph", "Dim"]
 
 
     # Define a consistent style for both input and dropdown elements
@@ -100,9 +102,34 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
     }
     
     dropdown_container_style = {'display': 'flex', 'flex-direction': 'column', 'align-items': 'center'}
-    
+
     # Create the dropdowns for each column
     dropdowns_with_labels = []
+    
+    
+    
+    # for axi in axis:
+    #     dropdown_with_label = html.Div(
+    #         style=dropdown_container_style,
+    #         children=[
+    #             html.Label(f'Select {axi}'),  # Label for the dropdown
+    #             dcc.Dropdown(
+    #                 id=f'{axi}-dropdown-' + tab,
+    #                 options=[{'label': val, 'value': val} for val in columns] if axi not in ['Dim', 'Graph', 'Func on y', 'Func on z', 'Func on t']
+    #                 else [{'label': val, 'value': val} for val in (graph_type if axi == 'Graph' else dim_type if axi == 'Dim' else function_on_y)],
+    #                 value='count' if axi == 'y' else 'Histogram' if axi == 'Graph' else '1D' if axi == 'Dim' else 'Avg' if axi in ['Func on y', 'Func on z', 'Func on t'] else None,
+    #                 style=uniform_style,
+    #                 className='dash-dropdown',
+    #                 clearable=True
+    #             )
+    #         ]
+    #     )
+    #     dropdowns_with_labels.append(dropdown_with_label)
+
+
+
+    
+
     for axi in axis:
         if axi == 'Dim':
             # Get unique values and sort them
@@ -132,6 +159,21 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                         style=uniform_style,
                         className='dash-dropdown',
                         clearable=True
+                    )
+                ]
+            )
+        elif axi == 'Func on t':
+            dropdown_with_label = html.Div(
+                style=dropdown_container_style,
+                children=[
+                    html.Label(f'Select {axi}'),  # Label for the dropdown
+                    dcc.Dropdown(
+                        id=f'{axi}-dropdown-'+tab,
+                        options=[{'label': val, 'value': val} for val in function_on_y],
+                        value="Avg",
+                        style=uniform_style,
+                        className='dash-dropdown'
+                        # clearable=True
                     )
                 ]
             )
@@ -165,6 +207,21 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                     )
                 ]
             )
+        elif axi== 't':
+            dropdown_with_label = html.Div(
+                style=dropdown_container_style,
+                children=[
+                    html.Label(f'Select {axi}'),  # Label for the dropdown
+                    dcc.Dropdown(
+                        id=f'{axi}-dropdown-'+tab,
+                        options=[{'label': val, 'value': val} for val in columns],
+                        # value=None,
+                        style=uniform_style,
+                        className='dash-dropdown',
+                        clearable=True
+                    )
+                ]
+            )
         elif axi== 'z':
             dropdown_with_label = html.Div(
                 style=dropdown_container_style,
@@ -188,7 +245,7 @@ def dropdown_figure(df, id_graph, tab, dark_dropdown_style, uniform_style, Large
                     dcc.Dropdown(
                         id=f'{axi}-dropdown-'+tab,
                         options=[{'label': val, 'value': val} for val in columns],
-                        # value=None,
+                        value="count",
                         style=uniform_style,
                         className='dash-dropdown',
                         clearable=True
@@ -339,7 +396,7 @@ def button_modal_dropdowns_inputs(id_subname, text_button, df, id_graph, tab,
     dbc.Button(text_button, id="open-modal-"+id_subname, n_clicks=0, className='button'),
     dbc.Modal(
         [
-            dbc.ModalHeader(dbc.ModalTitle(text_modal)),
+            dbc.ModalHeader(dbc.ModalTitle(text_modal), style={'fontSize': '24px'}),
             dbc.ModalBody(
                 [   
                     
@@ -352,7 +409,8 @@ def button_modal_dropdowns_inputs(id_subname, text_button, df, id_graph, tab,
                             'gap': '10px',  # Add spacing between dropdowns
                         }
                     )
-                ]
+                ],
+                style={'marginLeft': '20px'}
             ),
             html.Span("", style={'margin': '0 10px'}),
             dbc.ModalFooter(
@@ -408,13 +466,14 @@ def button_modal_double_input(id_subname, text_button, placeholder_input_1, plac
     dbc.Button(text_button, id="open-modal-"+id_subname, n_clicks=0, className='button'),
     dbc.Modal(
         [
-            dbc.ModalHeader(dbc.ModalTitle(text_modal)),
+            dbc.ModalHeader(dbc.ModalTitle(text_modal), style={'fontSize': '24px'}),
             dbc.ModalBody(
                 [
                     dcc.Input(id="input_1-"+id_subname, type="text", style=dropdown_style, className='dash-input dynamic-width', placeholder=placeholder_input_1),
                     html.Span(":", style={'margin': '0 10px'}),
                     dcc.Input(id="input_2-"+id_subname, type="text", style=dropdown_style, className='dash-input dynamic-width', placeholder=placeholder_input_2),
-                ]
+                ],
+                style={'marginLeft': '20px'}
             ),
             html.Span("", style={'margin': '0 10px'}),
             dbc.ModalFooter(
@@ -471,7 +530,7 @@ def button_modal_dropdown_input(id_subname, text_button, option_dropdown, placeh
     dbc.Button(text_button, id="open-modal-"+id_subname, n_clicks=0, className='button'),
     dbc.Modal(
         [
-            dbc.ModalHeader(dbc.ModalTitle(text_modal)),
+            dbc.ModalHeader(dbc.ModalTitle(text_modal), style={'fontSize': '24px'}),
             dbc.ModalBody(
                 [   
                     dcc.Dropdown(
@@ -484,7 +543,8 @@ def button_modal_dropdown_input(id_subname, text_button, option_dropdown, placeh
                     ),
                     html.Span(":", style={'margin': '0 10px'}),
                     dcc.Input(id="input-"+id_subname, type="number", style=dropdown_style, className='dash-input dynamic-width', placeholder=placeholder_input),
-                ]
+                ],
+                style={'marginLeft': '20px'}
             ),
             html.Span("", style={'margin': '0 10px'}),
             dbc.ModalFooter(
@@ -499,6 +559,83 @@ def button_modal_dropdown_input(id_subname, text_button, option_dropdown, placeh
     ),
     html.Div(id="output-div-"+id_subname) 
     ])
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
+def button_modal_input_text_dropdown(id_subname, text_button, option_dropdown, placeholder_input,
+                               value_dropdown, text_modal, dark_dropdown_style, uniform_style):
+
+    """
+    Goal: Create a button which give access to a modal.
+    The modal contains a dropdown and an input with a submit button.
+
+    Parameters:
+    - id_subname: Part of all the id name associated with this button modal.
+    - text_button: Text on the button.
+    - option_dropdown: options of the dropdown inside the modal.
+    - placeholder_input: Text inside the input without content.
+    - value_dropdown: Initial value for the dropdown.
+    - text_modal: Text at the Head of the modal.
+    - dark_dropdown_style: Color style of the dropdown.
+    - uniform_style: Color style of the dropdown.
+
+    Returns:
+    - The finalized dash button with its modal content. 
+    - Creation of all the id:
+        - "open-modal-"+id_subname: id of the button.
+        - "dropdown-"+id_subname: id of the dropdown inside the modal.
+        - "input-"+id_subname: id of the input inside the modal.
+        - "submit-button-"+id_subname: id of the submit button inside the modal.
+        - "modal-"+id_subname: id of the modal.
+        - "output-div-"+id_subname: id of the dash output.
+        
+    """       
+
+    dropdown_style = {'width': f'200px', 'height': '40px', 'boxSizing': 'border-box'}
+
+        
+    return html.Div([
+    dbc.Button(text_button, id="open-modal-"+id_subname, n_clicks=0, className='button'),
+    dbc.Modal(
+        [
+            dbc.ModalHeader(dbc.ModalTitle(text_modal), style={'fontSize': '24px'}),
+            dbc.ModalBody(
+                [   
+
+                    dcc.Input(id="input-"+id_subname, type="text", style=dropdown_style, className='dash-input dynamic-width', placeholder=placeholder_input),
+
+                    html.Span(":", style={'margin': '0 10px'}),
+
+                    dcc.Dropdown(
+                        id="dropdown-"+id_subname,
+                        options=option_dropdown,
+                        value=value_dropdown,
+                        clearable=True,
+                        style=dropdown_style,
+                        className='dash-dropdown'
+                    ),
+
+                ],
+                style={'marginLeft': '20px'}
+            ),
+            html.Span("", style={'margin': '0 10px'}),
+            dbc.ModalFooter(
+                dbc.Button("Submit", id="submit-button-"+id_subname, n_clicks=0, className='button')
+            ),
+        ],
+        id="modal-"+id_subname,
+        is_open=False,  # Initially closed
+        className='top-modal',  # Apply the custom class here
+        centered=True,
+        size="lg",
+    ),
+    html.Div(id="output-div-"+id_subname) 
+    ])
+
 
 
 """#=============================================================================
@@ -542,7 +679,7 @@ def button_modal_dropdown_and_double_input(id_subname, text_button, option_dropd
     dbc.Button(text_button, id="open-modal-"+id_subname, n_clicks=0, className='button'),
     dbc.Modal(
         [
-            dbc.ModalHeader(dbc.ModalTitle(text_modal)),
+            dbc.ModalHeader(dbc.ModalTitle(text_modal), style={'fontSize': '24px'}),
             dbc.ModalBody(
                 [   
                     dcc.Dropdown(
@@ -557,7 +694,8 @@ def button_modal_dropdown_and_double_input(id_subname, text_button, option_dropd
                     dcc.Input(id="input_1-"+id_subname, type="number", style=dropdown_style, className='dash-input dynamic-width', placeholder=placeholder_input_1),
                     html.Span(":", style={'margin': '0 10px'}),
                     dcc.Input(id="input_2-"+id_subname, type="number", style=dropdown_style, className='dash-input dynamic-width', placeholder=placeholder_input_2),
-                ]
+                ],
+                style={'marginLeft': '20px'}
             ),
             html.Span("", style={'margin': '0 10px'}),
             dbc.ModalFooter(
@@ -616,7 +754,7 @@ def button_modal_subplot_creation(id_subname, text_button, placeholder_input_1, 
     dbc.Button(text_button, id="open-modal-"+id_subname, n_clicks=0, className='button'),
     dbc.Modal(
         [
-            dbc.ModalHeader(dbc.ModalTitle(text_modal)),
+            dbc.ModalHeader(dbc.ModalTitle(text_modal), style={'fontSize': '24px'}),
 
             dbc.ModalBody(
                 [   
@@ -626,7 +764,8 @@ def button_modal_subplot_creation(id_subname, text_button, placeholder_input_1, 
                     html.Span(":", style={'margin': '0 10px'}),
                     dcc.Input(id="input_3-"+id_subname, type="number", style=dropdown_style, className='dash-input dynamic-width', placeholder=placeholder_input_3),
 
-                ]
+                ],
+                style={'marginLeft': '20px'}
             ),
             html.Span("", style={'margin': '0 10px'}),
             dbc.ButtonGroup([
@@ -719,7 +858,7 @@ def buttons_subplots(id_subname, text_button, nb_buttons, nb_buttons_row, nb_but
 
 def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig, 
                          dropdowns_with_labels_for_fig_filter, button_dropdown_function, 
-                         button_dropdown_regression, button_dropdown_smoothing, button_subplot):
+                         button_dropdown_regression, button_dropdown_smoothing, button_subplot, button_saving_figure):
 
     """
     Goal: Create the dropdown associated to a figure.
@@ -735,6 +874,7 @@ def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig,
     - button_dropdown_regression: The button that open the modal for regresison creation.
     - button_dropdown_smoothing: The button that open the modal for smoothing.
     - button_subplot: The button that open the modal for subplot creation.
+    - button_saving_figure :  The button to save the current figure.
     
     Returns:
     - The finalized figure with all the dropdowns and checkboxes on dash. 
@@ -748,7 +888,7 @@ def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig,
                 dropdowns_with_labels_for_fig,
                 style={
                     'display': 'flex',
-                    'margin-left': '200px',
+                    'margin-left': '0px',
                     'justify-content': 'flex-start',
                     'gap': '5px',
                     'margin-bottom': '20px'  # Add space below the dropdowns
@@ -762,7 +902,7 @@ def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig,
                     html.Div(
                         [dcc.Graph(id=idgraph, style={'width': '100%', 'height': '600px'}),
                          dcc.Store(id='figure-store-'+tab, data={})], 
-                        style={'margin-left': '20px', 'width': '70%'}
+                        style={'margin-left': '20px', 'width': '90%'}
                     ),
                     # Dropdowns and heading in a vertical column on the right
                     html.Div(
@@ -805,17 +945,6 @@ def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig,
                                     'gap': '10px',  # Add spacing between dropdowns
                                 }
                             ),  
-                            
-                            html.Span("", style={'margin': '0 10px'}),
-                            
-                            html.Div(
-                                html.Button("Hide Dropdowns on figure", id='hide-dropdowns-'+tab, n_clicks=0, className='button'),
-                                style={
-                                    'display': 'flex',
-                                    'justify-content': 'flex-start',
-                                    'gap': '10px',  # Add spacing between dropdowns
-                                }
-                            ),  
 
                             html.Span("", style={'margin': '0 10px'}),
                             
@@ -838,8 +967,28 @@ def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig,
                                     'gap': '10px',  # Add spacing between dropdowns
                                 }
                             ), 
+
+                            html.Span("", style={'margin': '0 10px'}),
+                            
+                            html.Div(
+                                button_saving_figure,
+                                style={
+                                    'display': 'flex',
+                                    'justify-content': 'flex-start',
+                                    'gap': '10px',  # Add spacing between dropdowns
+                                }
+                            ),  
                         ]
-                    )
+                    ),
+                    html.Div(
+                        html.Button("Show Data Table", id='datatable-button-'+tab, n_clicks=0, className='button'),
+                        style={
+                            'display': 'flex',
+                            'justify-content': 'flex-start',
+                            'gap': '10px',  # Add spacing between dropdowns
+                        }
+                    ),
+                    
                 ]
             )
         ]

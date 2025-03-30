@@ -24,8 +24,6 @@ import Levenshtein
 import imageio
 import os
 
-import Function_errors as fe
-
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
@@ -171,13 +169,7 @@ def Pivot_table(csvFile,Para,remove_unknown_colmun, Large_file_memory=False):
     pivot_table = y.pivot(index=Para[0], 
                           columns=Para[1] if len(Para) == 2 else (Para[1], Para[2]), 
                           values='Count').fillna(0)
-    
-    # # Remove unknown column name if remove_unknown_colmun==True
-    # if remove_unknown_colmun==True and Large_file_memory==False:
-    #     pivot_table  = pivot_table.drop(['\\N'], axis=1)
-    # elif remove_unknown_colmun==True and Large_file_memory==True:
-    #     pivot_table = pivot_table.dropna()
-    
+        
     #Add last column for the sum of each rows named Total
     s = sum ( [pivot_table[i] for i in  pivot_table.columns])
     pivot_table2 = pivot_table.assign(Total=s).sort_values(by=['Total'], ascending=False)
@@ -188,61 +180,6 @@ def Pivot_table(csvFile,Para,remove_unknown_colmun, Large_file_memory=False):
     
     return pivot_table2
 
-
-"""#=============================================================================
-   #=============================================================================
-   #============================================================================="""
-
-
-def highest_dataframe_sorted_by(Pivot_table, first_n_top_amount_col, Para_sorted):
-    
-    """
-    Goal: From a table take only the first first_n_top_amount_col largest sum columns.
-    : Pivot_table where only the first first_n_top_amount_col have been which have been sorted and .
-
-    Parameters:
-    - Pivot_table: dataframe which have been pivoted.
-    - first_n_top_amount_col: integer which represents the number of columns to keep.
-    - Para_sorted: columns name which will be use to sort the table.
-
-    Returns:
-    - Table y: New table which contains the highest sum columns 
-    and a column named 'Other' which is the sum of all the other columns
-    """    
-        
-    # # remove from the dataframe the index which cannot be eval
-    # y = Pivot_table[Pivot_table.index.to_series().apply(lambda x: isinstance(fe.myeval(x), int))] 
-    y = Pivot_table
-    
-    # sort the data in function of column Para_sorted
-    y = y.sort_values(by=[Para_sorted], ascending=True)     
-    
-    # Calculate the sum of each column
-    column_sums = y.sum()
-    
-    # Sort columns by their sum in descending order
-    if first_n_top_amount_col != None:
-        top_columns = column_sums.nlargest(first_n_top_amount_col).index
-    else:
-        top_columns = column_sums.index
-    
-    # Create the new DataFrame 
-    rest_columns = column_sums.index.difference(top_columns)
-    s = sum ( [y[rest_columns][i] for i in  y[rest_columns].columns])
-    y = y[top_columns].assign(Other=s)
-        
-    # Divide all the dataframe by the first column
-    y_divided = y.div(y.iloc[:, 0], axis=0)*100
-       
-    # Remove the column Total and nan if needed from y and y_divided
-    y_divided = y_divided.drop('Total', axis=1)
-    y  = y.drop('Total', axis=1)
-    
-    print("Table created with only the first "+str(first_n_top_amount_col)+" columns+1 of the initial table.")
-    print()
-    return y
-
-
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
@@ -251,8 +188,7 @@ def highest_dataframe_sorted_by(Pivot_table, first_n_top_amount_col, Para_sorted
 def avg_column_value_index(Pivot_table):
     
     """
-    Goal: Creates in the table a new column which is th avg value of all the other column times the 
-    column name.
+    Goal: Creates in the table a new column which is th avg value of all the other column times the column name.
 
     Parameters:
     - Pivot_table: dataframe which have been pivoted.
@@ -320,145 +256,6 @@ def group_small_values(data, col, count_column, n, col_ref=None):
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
-
-
-def aggregate_value(data, col_to_aggregate, count_col, col_ref=None):
-
-    """
-    Goal: Aggregate the value of the dataframe.
-
-    Parameters:
-    - data: Dataframe.
-    - col_to_aggregate: Column in the dataframe that must be grouped.
-    - count_col: Column in the dataframe (usally count) which will give the total amount of the Other.
-    - col_ref: Column in the dataframe that will be use as a reference to regroup the values of col.
-
-    Returns:
-    - The updated Dataframe.
-    """
-
-    # Identify columns to aggregate based on exclusions
-    columns_to_aggregate = data.columns.tolist()
-    
-    if col_ref is not None:
-        columns_to_aggregate.remove(col_ref)
-    columns_to_aggregate.remove(col_to_aggregate)
-    columns_to_aggregate.remove(count_col)
-
-    # Create aggregation dictionary for other columns
-    aggregation_dict = {}
-    for col in columns_to_aggregate:
-        # Assign the average calculation for each column
-        aggregation_dict[col] = (col, lambda x: (x * data.loc[x.index, count_col]).sum() / data.loc[x.index, count_col].sum())
-
-    # Perform aggregation
-    if col_ref is not None:
-        temp_data = data.groupby([col_ref, col_to_aggregate], as_index=False).agg(
-            count=(count_col, 'sum'),
-            **aggregation_dict
-        )
-    else:
-        temp_data = data.groupby([col_to_aggregate], as_index=False).agg(
-            count=(count_col, 'sum'),
-            **aggregation_dict
-        )
-  
-    # Now we want to merge the aggregated data back with the unaggregated data without the grouped rows
-    if col_ref is not None:
-        # Keep other unique entries in the original data
-        other_data = data[~data[col_to_aggregate].isin(temp_data[col_to_aggregate])]
-
-        # Concatenate the aggregated and the other data
-        final_data = pd.concat([temp_data, other_data], ignore_index=True).sort_values(by=[col_ref, col_to_aggregate])
-    else:
-        # Keep other unique entries in the original data
-        other_data = data[~data[col_to_aggregate].isin(temp_data[col_to_aggregate])]
-
-        # Concatenate the aggregated and the other data
-        final_data = pd.concat([temp_data, other_data], ignore_index=True).sort_values(by=[col_to_aggregate])
-
-    return final_data.reset_index(drop=True)
-
-
-"""#=============================================================================
-   #=============================================================================
-   #============================================================================="""
-
-
-def name_check(df,Job,Name):
-    
-    """
-    Goal: Get the list of names which represent the same person to overpass the bad names writing by the user.
-
-    Parameters:
-    - df: dataframe
-    - Job: Profession of the name
-    - Name: Name of the person
-
-    Returns:
-    - List of the names which have fulfill the test.
-    """
-        
-    df_sec=list(df[Job])
-    max_distance=2   
-    accepted_name=[]
-    for i in range(len(df_sec)):
-        sim_name=are_names_close_with_inversion(Name, df_sec[i], max_distance)
-        if sim_name==True and df_sec[i] not in accepted_name:
-            accepted_name.append(df_sec[i])
-                
-    return accepted_name
-
-
-"""#=============================================================================
-   #=============================================================================
-   #============================================================================="""
-
-
-def are_names_close_with_inversion(name1, name2, max_distance):
-    
-    """
-    Goal: Check if two names are close enough, considering potential inversion of first and last names.
-
-    Parameters:
-    - name1: First name
-    - name2: Second name
-    - max_distance: Maximum allowed distance for the names to be considered close
-
-    Returns:
-    - True if the Levenshtein distance between the names (and their inversions) is less than 
-    or equal to max_distance, else False
-    """
-    
-    def split_name(name):
-        parts = name.split()
-        if len(parts) == 2:
-            return parts[0], parts[1]
-        return parts[0], ""  # Handle cases with just a single name part
-    
-    try:
-        name1, name2=name1.lower(), name2.lower()
-        first1, last1 = split_name(name1)
-        first2, last2 = split_name(name2)
-    
-        # Compare as is
-        direct_comparison = (Levenshtein.distance(first1, first2) <= max_distance and
-                             Levenshtein.distance(last1, last2) <= max_distance)
-    
-        # Compare with inversion
-        inversion_comparison = (Levenshtein.distance(first1, last2) <= max_distance and
-                                Levenshtein.distance(last1, first2) <= max_distance)
-    
-        return direct_comparison or inversion_comparison
-    
-    except AttributeError:
-        return 'None'
-
-
-"""#=============================================================================
-   #=============================================================================
-   #============================================================================="""
-
 
 def make_movie(plotly_fig):
 

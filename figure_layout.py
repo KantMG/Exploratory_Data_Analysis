@@ -40,10 +40,9 @@ import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
 
-import Function_dataframe as fd
-import Function_errors as fe
-import data_plot_preparation as dpp
-import figure_layout as fl
+import Exploratory_Data_Analysis.Function_dataframe as fd
+import Exploratory_Data_Analysis.data_plot_preparation as dpp
+import Exploratory_Data_Analysis.figure_layout as fl
 
 
 """#=============================================================================
@@ -51,7 +50,7 @@ import figure_layout as fl
    #============================================================================="""
 
 
-def fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel,zlabel,x_column,y_column,z_column,g_column,d_column, df_col_string):
+def fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel,zlabel,tlabel,x_column,y_column,z_column,t_column,g_column,d_column, df_col_string):
 
     """
     Goal: Update the layout of the dash figure.
@@ -62,7 +61,11 @@ def fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel
     - xlabel: The xlabel of the axis (can be None).
     - ylabel: The ylabel of the axis (can be None).
     - zlabel: The zlabel of the axis (can be None).
+    - tlabel: The tlabel of the axis (can be None).
     - x_column: Column in the dataframe
+    - y_column: Column in the dataframe
+    - z_column: Column in the dataframe
+    - t_column: Column in the dataframe
     - g_column: Type of Graphyque for the figure.
     - d_column: Graphyque dimension for the figure.
     - df_col_string: List of columns in the DataFrame that are of object type.
@@ -116,33 +119,6 @@ def fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel
             )
             
         )
-        # if y_column is not None:
-        #     fig_json_serializable.update_layout(
-        #         updatemenus=[
-        #             dict(
-        #                 buttons=list([
-        #                     dict(
-        #                         args=[{"marker.colorscale": "Viridis", "coloraxis.colorbar.title": y_column}],
-        #                         label="Linear Scale",
-        #                         method="restyle"
-        #                     ),
-        #                     dict(
-        #                         args=[{"marker.colorscale": "Viridis", "marker.colors": data_for_plot[y_column].apply(lambda x: max(x, 1e-10)), "coloraxis.colorbar.title": y_column}],
-        #                         label="Log Scale",
-        #                         method="restyle"
-        #                     )
-        #                 ]),
-        #                 direction="down",
-        #                 pad={"r": 10, "t": 10},
-        #                 showactive=True,
-        #                 x=0.1,           # position of the dropdown
-        #                 xanchor="left",
-        #                 y=1.1,           # position of the dropdown
-        #                 yanchor="top"
-        #             ),
-        #         ],
-        #         coloraxis_colorbar=dict(title=y_column)  # Add the color bar title
-        #     )
         
     elif x_column is not None and d_column =="3D":
         fig_json_serializable.update_layout(
@@ -187,7 +163,7 @@ def fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel
         )
         
         # Add dropdowns
-        button_layer_1_height = 1.08
+        button_layer_1_height = 0.9
         
         updatemenus=[
             dict(
