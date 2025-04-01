@@ -22,4 +22,4 @@ __author__ = 'Moreno-Gelos'
 
 
 from .main import Run_Exploratory_Data_Analysis
-
+from .app_state import previous_clicks, previous_reset_clicks, last_clicked_index, Debug

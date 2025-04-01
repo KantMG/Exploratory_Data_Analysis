@@ -22,6 +22,9 @@ import numpy as np
 
 import Exploratory_Data_Analysis.function_dataframe as fd
 
+import Exploratory_Data_Analysis.debug_dash_infos as ddi
+import Exploratory_Data_Analysis.app_state as aps
+
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
@@ -54,17 +57,19 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
     - z_column: Column in the dataframe (it could have change)
     - t_column: Column in the dataframe (it could have change)
     """
-        
+    
+    Debug = aps.Debug
+    
     df_col_string = [col + '_split' for col in df_col_string]
     
-    # print("Delete the rows with unknown value and split the column with multiple value per cell.")
+    # ddi.debug_print("Delete the rows with unknown value and split the column with multiple value per cell.", debug=Debug) 
     Para, df_temp, x_column, y_column, z_column, t_column = delete_rows_unknow_and_split(df_temp, x_column, y_column, z_column, t_column, Large_file_memory)
 
     # if yf_column == "Value in x_y interval":
     #     data_for_plot, x_column, y_column, z_column, t_column = count_value_x_y_interval(df_temp, x_column, y_column, z_column, t_column)
     #     return Para, data_for_plot, x_column, y_column, z_column
     
-    print("delete_rows_unknow_and_split done")
+    ddi.debug_print("delete_rows_unknow_and_split done", debug=Debug) 
          
     
     #Case where y_column is None
@@ -73,13 +78,11 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
         data_for_plot=df_temp.value_counts(dropna=False).reset_index(name='count') #dropna=False to count nan value
         # sort the data in function of column Para_sorted
         data_for_plot = data_for_plot.sort_values(by=Para[0], ascending=True)
-        
-    elif str(x_column)=='count' and str(z_column)=='None':
-        # Get the Count table of the dataframe  
-        data_for_plot=df_temp.value_counts(dropna=False).reset_index(name='count') #dropna=False to count nan value
-        # sort the data in function of column Para_sorted
-        data_for_plot = data_for_plot.sort_values(by=Para[1], ascending=True)
 
+    elif str(y_column)!='count' and str(z_column)=='None':
+        data_for_plot = df_temp[[x_column, y_column]]
+
+        
 
     #Case where y_column is not None and z_column is None
     elif str(y_column)=='count' and str(z_column)!='None' and str(t_column)=='None':   
@@ -108,12 +111,28 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
             data_for_plot = df_temp.groupby([x_column, y_column]).size().reset_index(name='count')
 
 
-    elif str(z_column)=='No count' and str(t_column)=='None':   
+    elif str(y_column)!='count' and str(z_column)!='count' and str(t_column)=='None':   
+        
+        if yf_column == "Avg" and zf_column is None:
+            data_for_plot = df_temp.groupby([x_column, z_column]).agg(
+                avg_y_column=('{}'.format(y_column), 'mean'),
+                count=('{}'.format(y_column), 'size')
+            ).reset_index()
+            avg_col_name = 'avg_' + y_column
+            data_for_plot.rename(columns={'avg_y_column': avg_col_name}, inplace=True)          
+        elif yf_column is None and zf_column == "Avg":
+            data_for_plot = df_temp.groupby([x_column, y_column]).agg(
+                avg_z_column=('{}'.format(z_column), 'mean'),
+                count=('{}'.format(z_column), 'size')
+            ).reset_index()
+            avg_col_name = 'avg_' + z_column
+            data_for_plot.rename(columns={'avg_z_column': avg_col_name}, inplace=True)   
+        else:
+            data_for_plot = df_temp[[x_column, y_column, z_column]]
 
-        data_for_plot = df_temp[[x_column, y_column]]
 
             
-    # #Case where z_column is not None
+    # #Case where t_column is not None
     elif str(y_column)=='count' and str(t_column)!='None':   
 
         
@@ -130,24 +149,6 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
                 'avg_z_column': 'avg_' + z_column,
                 'avg_t_column': 'avg_' + t_column
             }, inplace=True)
-           
-            
-        elif zf_column=="Avg" and tf_column == "Weight on y":
-
-            data_for_plot = df_temp.groupby([x_column]).agg(
-                avg_z_column=('{}'.format(z_column), 'mean'),
-                sum_t_column=('{}'.format(t_column), 'sum'),
-                count=('{}'.format(t_column), 'size')
-            ).reset_index()
-
-            # We'll use sum_numVotes as the number of observations for each startYear
-            data_for_plot['sum_t_column'] = data_for_plot['avg_z_column'] / np.sqrt(data_for_plot['sum_t_column'])
-                        
-            # Renaming the columns
-            data_for_plot.rename(columns={
-                'avg_z_column': 'avg_' + z_column,
-                'sum_t_column': 'standard_error',
-            }, inplace=True)       
 
 
         elif zf_column is None and tf_column == "Avg":
@@ -200,24 +201,32 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
             }, inplace=True)
            
             
-        elif yf_column=="Avg" and tf_column == "Weight on y":
+        elif yf_column is None and tf_column == "Avg":
 
-            data_for_plot = df_temp.groupby([x_column]).agg(
-                avg_y_column=('{}'.format(y_column), 'mean'),
-                sum_t_column=('{}'.format(t_column), 'sum'),
+            data_for_plot = df_temp.groupby([x_column, y_column]).agg(
+                avg_t_column=('{}'.format(t_column), 'mean'),
                 count=('{}'.format(t_column), 'size')
             ).reset_index()
-
-            # We'll use sum_numVotes as the number of observations for each startYear
-            data_for_plot['sum_t_column'] = data_for_plot['avg_y_column'] / np.sqrt(data_for_plot['sum_t_column'])
                         
             # Renaming the columns
             data_for_plot.rename(columns={
-                'avg_y_column': 'avg_' + y_column,
-                'sum_t_column': 'standard_error',
-            }, inplace=True)  
+                'avg_t_column': 'avg_' + t_column
+            }, inplace=True)
+
+        elif yf_column == "Avg" and tf_column is None:
+
+            data_for_plot = df_temp.groupby([x_column, t_column]).agg(
+                avg_y_column=('{}'.format(y_column), 'mean'),
+                count=('{}'.format(y_column), 'size')
+            ).reset_index()
+                        
+            # Renaming the columns
+            data_for_plot.rename(columns={
+                'avg_y_column': 'avg_' + y_column
+            }, inplace=True)            
         
         else:
+            
             data_for_plot = df_temp.groupby([x_column, y_column, t_column]).size().reset_index(name='count')
     
 
@@ -225,9 +234,8 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
     # #Case where z_column is not None
     elif str(t_column)=='count':   
         
-        print(x_column,y_column,z_column,t_column)
-        print(yf_column,zf_column)
-        print(yf_column is None)
+        ddi.debug_print("x / y / z / t : {x_column} / {y_column} / {z_column} / {t_column}", debug=Debug) 
+        ddi.debug_print("yf / zf : {x_column} / {y_column} / {yf_column} / {zf_column}", debug=Debug) 
         
         if yf_column=="Avg" and zf_column == "Avg":
             
@@ -244,22 +252,17 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
             }, inplace=True)
            
             
-        elif yf_column=="Avg" and zf_column == "Weight on y":
+        elif yf_column=="Avg" and zf_column is None:
 
-            data_for_plot = df_temp.groupby([x_column]).agg(
+            data_for_plot = df_temp.groupby([x_column, z_column]).agg(
                 avg_y_column=('{}'.format(y_column), 'mean'),
-                sum_z_column=('{}'.format(z_column), 'sum'),
                 count=('{}'.format(y_column), 'size')
             ).reset_index()
-
-            # We'll use sum_numVotes as the number of observations for each startYear
-            data_for_plot['sum_z_column'] = data_for_plot['avg_y_column'] / np.sqrt(data_for_plot['sum_z_column'])
                         
             # Renaming the columns
             data_for_plot.rename(columns={
-                'avg_y_column': 'avg_' + y_column,
-                'sum_z_column': 'standard_error',
-            }, inplace=True)  
+                'avg_y_column': 'avg_' + y_column
+            }, inplace=True)
             
         
         elif yf_column is None and zf_column == "Avg":
@@ -275,22 +278,111 @@ def data_preparation_for_plot(df_temp, df_col_string, x_column, y_column, z_colu
             }, inplace=True) 
 
         else:
+            
             data_for_plot = df_temp.groupby([x_column, y_column, z_column]).size().reset_index(name='count')
 
 
-    elif str(t_column)=='No count':   
+    elif str(t_column)!='count' and str(t_column) is not None and yf_column!='count' and zf_column!='count':   
 
-        data_for_plot = df_temp[[x_column, y_column, z_column]]
 
+        if yf_column=="Avg" and zf_column == "Avg" and tf_column == "Avg":
+            
+            data_for_plot = df_temp.groupby([x_column, t_column]).agg(
+                avg_y_column=('{}'.format(y_column), 'mean'),
+                avg_z_column=('{}'.format(z_column), 'mean'),
+                count=('{}'.format(y_column), 'size')
+            ).reset_index()
+                        
+            # Renaming the columns
+            data_for_plot.rename(columns={
+                'avg_y_column': 'avg_' + y_column,
+                'avg_z_column': 'avg_' + z_column
+            }, inplace=True)
+           
+        elif yf_column=="Avg" and zf_column == "Avg" and t_column is None:
+            
+            data_for_plot = df_temp.groupby([x_column, t_column]).agg(
+                avg_y_column=('{}'.format(y_column), 'mean'),
+                avg_z_column=('{}'.format(z_column), 'mean'),
+                count=('{}'.format(y_column), 'size')
+            ).reset_index()
+                        
+            # Renaming the columns
+            data_for_plot.rename(columns={
+                'avg_y_column': 'avg_' + y_column,
+                'avg_z_column': 'avg_' + z_column
+            }, inplace=True)
+
+            
+        elif yf_column=="Avg" and zf_column is None and tf_column == "Avg":
+
+            data_for_plot = df_temp.groupby([x_column, z_column]).agg(
+                avg_y_column=('{}'.format(y_column), 'mean'),
+                avg_t_column=('{}'.format(t_column), 'mean'),
+                count=('{}'.format(y_column), 'size')
+            ).reset_index()
+                        
+            # Renaming the columns
+            data_for_plot.rename(columns={
+                'avg_y_column': 'avg_' + y_column,
+                'avg_t_column': 'avg_' + t_column
+            }, inplace=True)
+
+        elif yf_column is None and zf_column=="Avg" and tf_column == "Avg":
+
+            data_for_plot = df_temp.groupby([x_column, y_column]).agg(
+                avg_z_column=('{}'.format(z_column), 'mean'),
+                avg_t_column=('{}'.format(t_column), 'mean'),
+                count=('{}'.format(z_column), 'size')
+            ).reset_index()
+                        
+            # Renaming the columns
+            data_for_plot.rename(columns={
+                'avg_z_column': 'avg_' + z_column,
+                'avg_t_column': 'avg_' + t_column
+            }, inplace=True)
+            
+        elif yf_column == "Avg" and zf_column is None and tf_column is None:
+            
+            data_for_plot = df_temp.groupby([x_column, z_column, t_column]).agg(
+                avg_y_column=('{}'.format(y_column), 'mean'),
+                count=('{}'.format(y_column), 'size')
+            ).reset_index()
+
+            # Renaming the columns
+            data_for_plot.rename(columns={
+                'avg_y_column': 'avg_' + y_column,
+            }, inplace=True) 
+        
+        elif yf_column is None and zf_column == "Avg" and tf_column is None:
+            
+            data_for_plot = df_temp.groupby([x_column, y_column, t_column]).agg(
+                avg_z_column=('{}'.format(z_column), 'mean'),
+                count=('{}'.format(y_column), 'size')
+            ).reset_index()
+
+            # Renaming the columns
+            data_for_plot.rename(columns={
+                'avg_z_column': 'avg_' + z_column,
+            }, inplace=True) 
+
+        elif yf_column is None and zf_column is None and tf_column == "Avg":
+            
+            data_for_plot = df_temp.groupby([x_column, y_column, z_column]).agg(
+                avg_t_column=('{}'.format(t_column), 'mean'),
+                count=('{}'.format(t_column), 'size')
+            ).reset_index()
+
+            # Renaming the columns
+            data_for_plot.rename(columns={
+                'avg_t_column': 'avg_' + t_column,
+            }, inplace=True) 
+
+        else:
+
+            data_for_plot = df_temp[[x_column, y_column, z_column, t_column]]
     
-
-    if x_column in df_col_string:
-        data_for_plot = data_for_plot.sort_values(by='count', ascending=False)
-
-    # # Remove rows with any NaN values
-    # data_for_plot = data_for_plot.dropna()
-    
-    print("Para=",Para)
+    ddi.debug_print(("Para=",Para), Debug)
     
     return Para, data_for_plot, x_column, y_column, z_column, t_column
 
@@ -322,13 +414,14 @@ def delete_rows_unknow_and_split(df_temp, x_column, y_column, z_column, t_column
     - t_column: Column in the dataframe (it could have change)
     """
     
+    Debug = aps.Debug
     
     df_col_numeric = df_temp.select_dtypes(include=['float64', 'int64']).columns.tolist()
     df_col_all = df_temp.columns.tolist()
     df_col_string = [col for col in df_col_all if col not in df_col_numeric]   
 
-    print("df_col_numeric=",df_col_numeric)
-    print("df_col_string=",df_col_string)
+    ddi.debug_print(("df_col_numeric=",df_col_numeric), debug=Debug) 
+    ddi.debug_print(("df_col_string=",df_col_string), debug=Debug) 
     
     if str(x_column) in df_col_string:
         df_temp[x_column] = df_temp[x_column].replace('', 'Unknown').astype(str)
@@ -356,54 +449,41 @@ def delete_rows_unknow_and_split(df_temp, x_column, y_column, z_column, t_column
         df_temp, element_counts = fd.explode_dataframe(df_temp, z_column)
         z_column = z_column+'_split'
 
-    #Case where y_column is None
-    if str(y_column)=='count' and str(z_column)=='None':    
-        df_temp = df_temp[[x_column]]
+
+
+    #Case where z_column is None
+    if str(z_column)=='None':    
         Para=[x_column, y_column]
+        if str(y_column)=='count':
+            df_temp = df_temp[[x_column]]
+        elif str(y_column)!='count':  
+            df_temp = df_temp[[x_column, y_column]]
 
-    elif str(x_column)=='count' and str(y_column)!='None' and str(z_column)=='None':    
-        df_temp = df_temp[[y_column]]
-        Para=[x_column, y_column]
+    #Case where z_column is not None and t_column is None
+    elif str(z_column)!='None' and str(t_column)=='None':
+        Para=[x_column, y_column, z_column]
+        if str(y_column)=='count':
+            df_temp = df_temp[[x_column, z_column]]
+        elif str(z_column)=='count':
+            df_temp = df_temp[[x_column, y_column]]
+        elif str(y_column)!='count' and str(z_column)!='count':
+            df_temp = df_temp[[x_column, y_column, z_column]]
         
 
-    elif str(x_column)=='count' and str(z_column)!='None' and str(t_column)=='None':
-        df_temp = df_temp[[y_column, z_column]]
-        Para=[x_column, y_column, z_column]    
-
-    elif str(y_column)=='count' and str(z_column)!='None' and str(t_column)=='None':
-        df_temp = df_temp[[x_column, z_column]]
-        Para=[x_column, y_column, z_column]
-
-    elif str(z_column)=='count' and str(t_column)=='None':
-        df_temp = df_temp[[x_column, y_column]]
-        Para=[x_column, y_column, z_column]
-
-    elif str(z_column)=='No count' and str(t_column)=='None':
-        df_temp = df_temp[[x_column, y_column]]
-        Para=[x_column, y_column, z_column]
-        
-
-    elif str(x_column)=='count' and str(z_column)!='None' and str(t_column)!='None':
-        df_temp = df_temp[[y_column, z_column, t_column]]
-        Para=[x_column, y_column, z_column, t_column]    
-
-    elif str(y_column)=='count' and str(z_column)!='None' and str(t_column)!='None':
-        df_temp = df_temp[[x_column, z_column, t_column]]
+    #Case where t_column is not None
+    elif str(t_column)!='None':
         Para=[x_column, y_column, z_column, t_column]
+        if str(y_column)=='count':
+            df_temp = df_temp[[x_column, z_column, t_column]]
+        elif str(z_column)=='count':
+            df_temp = df_temp[[x_column, y_column, t_column]]
+        elif str(t_column)=='count':
+            df_temp = df_temp[[x_column, y_column, z_column]]
+        elif str(y_column)!='count' and str(z_column)!='count' and str(t_column)!='count':
+            df_temp = df_temp[[x_column, y_column, z_column, t_column]]
 
-    elif str(z_column)=='count' and str(t_column)!='None':
-        df_temp = df_temp[[x_column, y_column, t_column]]
-        Para=[x_column, y_column, z_column, t_column]
-        
-    elif str(t_column)=='count':
-        df_temp = df_temp[[x_column, y_column, z_column]]
-        Para=[x_column, y_column, z_column, t_column]        
-
-    elif str(t_column)=='No count':
-        df_temp = df_temp[[x_column, y_column, z_column]]
-        Para=[x_column, y_column, z_column, t_column]  
     
-    print("Para=",Para)
+    ddi.debug_print(("Para=",Para), debug=Debug) 
     
     return Para, df_temp, x_column, y_column, z_column, t_column
 

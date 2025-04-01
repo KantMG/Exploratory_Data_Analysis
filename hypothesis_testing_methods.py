@@ -36,6 +36,8 @@ from dash import html
 from termcolor import colored
 from dash import dcc, html, Input, Output, dash_table, callback, callback_context
 
+import Exploratory_Data_Analysis.debug_dash_infos as ddi
+import Exploratory_Data_Analysis.app_state as aps
 
 def clean_data(df, independent, dependent):
     """Cleans data by removing rows with NaN values for the independent and dependent."""
@@ -59,8 +61,6 @@ def check_outliers_iqr(df, independent):
 def check_outliers(df, independent):
     """Detects outliers in the specified independent using the IQR method."""
     outliers, lower_bound, upper_bound = check_outliers_iqr(df, independent)
-    
-    print(outliers)
     
     if not outliers.empty:
 
@@ -407,6 +407,8 @@ def bootstrap_test(df_cleaned, independent, dependent, n_iterations=1000):
 def Hypothesis_Testing_Methods(df, dependent, independent, dependent_type, independent_type):
     """Main function to make an Hypothesis Testing Methods (t-test / ANOVA / χ²)."""
     
+    Debug = aps.Debug
+    
     # Step 1: Clean the data
     df_cleaned = clean_data(df, independent, dependent)
 
@@ -441,7 +443,7 @@ def Hypothesis_Testing_Methods(df, dependent, independent, dependent_type, indep
     else:
         outlier_table = None
     
-    print("Hypothesis_test : ", Hypothesis_test)
+    ddi.debug_print(("Hypothesis_test : ", Hypothesis_test), debug=Debug)
     
     if Hypothesis_test == "t-test" or Hypothesis_test == "ANOVA":
 

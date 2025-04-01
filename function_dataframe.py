@@ -24,6 +24,9 @@ import Levenshtein
 import imageio
 import os
 
+import Exploratory_Data_Analysis.debug_dash_infos as ddi
+import Exploratory_Data_Analysis.app_state as aps
+
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
@@ -75,6 +78,8 @@ def explode_dataframe(df, Para):
     - Can create very large array if many cells contain many elements.
     """
     
+    Debug = aps.Debug
+    
     df_temp = df.copy()
        
     # Step 1: Split the elements into lists of elements
@@ -96,10 +101,10 @@ def explode_dataframe(df, Para):
     element_counts = df_temp[Para + '_split'].value_counts()   
     
     # Display the result
-    print("Dataframe have been explode base on parameter "+Para)
-    print("The new counts of each elements is:")
-    print(element_counts)
-    print()
+    ddi.debug_print("Dataframe have been explode base on parameter "+Para, debug=Debug)
+    ddi.debug_print("The new counts of each elements is:", debug=Debug)
+    ddi.debug_print(element_counts, debug=Debug)
+    ddi.debug_print("", debug=Debug)
     
     return df_temp, element_counts
 
@@ -125,7 +130,9 @@ def reverse_explode_dataframe(df_exploded, Para):
     Warning:
     - 
     """
-
+    
+    Debug = aps.Debug
+    
     # Group by the original ID and aggregate back to the original format
     df_reverted = df_exploded.groupby('tconst')[Para + '_split'].agg(lambda x: ', '.join(x.str.strip())).reset_index()
     
@@ -133,8 +140,8 @@ def reverse_explode_dataframe(df_exploded, Para):
     df_reverted.rename(columns={Para + '_split': Para}, inplace=True)
     
     # Display the reverted DataFrame
-    print("Reverted DataFrame to original:")
-    print(df_reverted)
+    ddi.debug_print("Reverted DataFrame to original:", debug=Debug)
+    ddi.debug_print(df_reverted, debug=Debug)
     
     return df_reverted
 
@@ -160,6 +167,8 @@ def Pivot_table(csvFile,Para,remove_unknown_colmun, Large_file_memory=False):
     - Dataframe which have been pivoted.
     """
     
+    Debug = aps.Debug
+    
     df = csvFile[Para]
         
     # Get the Count table of the dataframe  
@@ -174,9 +183,9 @@ def Pivot_table(csvFile,Para,remove_unknown_colmun, Large_file_memory=False):
     s = sum ( [pivot_table[i] for i in  pivot_table.columns])
     pivot_table2 = pivot_table.assign(Total=s).sort_values(by=['Total'], ascending=False)
 
-    print("Dataframe of parameters "+' and '.join([str(i) for i in Para])+" have been pivoted.")
-    print(pivot_table2)
-    print()
+    ddi.debug_print("Dataframe of parameters "+' and '.join([str(i) for i in Para])+" have been pivoted.", debug=Debug)
+    ddi.debug_print(pivot_table2, debug=Debug)
+    ddi.debug_print("", debug=Debug)
     
     return pivot_table2
 
@@ -201,14 +210,10 @@ def avg_column_value_index(Pivot_table):
     # s = sum([Pivot_table[i] * int(i) for i in Pivot_table.columns if isinstance(i, str) and i.isdigit()])
     # s = Pivot_table.apply(lambda row: sum([row[i] * float(i) for i in Pivot_table.columns if isinstance(i, float)]), axis=1)
     s = Pivot_table.apply(lambda row: sum([row[i] * int(i) for i in Pivot_table.columns[:-1]]), axis=1)
-    
-    print(s)
-    
+        
     #Add avg_col as the last column of the dataframe and sort the dataframe
     pivot_table2 = Pivot_table.assign(avg_col=s).sort_values(by=['avg_col'], ascending=False)
-    
-    print(pivot_table2)
-    
+        
     #Correct the avg_col by dividing the values with the total value
     pivot_table2['avg_col']=pivot_table2['avg_col']/pivot_table2['Total']
     
@@ -269,12 +274,14 @@ def make_movie(plotly_fig):
     - The generated movie.
     """    
 
+    Debug = aps.Debug
+
     # Set the output path of your images
     image_paths = []
     
     # Loop through animation frames if they're defined
     for frame in plotly_fig.frames:
-        print(frame)
+        ddi.debug_print(frame, debug=Debug)
         plotly_fig.update(frames=[frame])
         image_path = f"frame_{frame.name}.png"
         plotly_fig.write_image(image_path)
@@ -287,4 +294,4 @@ def make_movie(plotly_fig):
             image = imageio.imread(image_path)
             writer.append_data(image)
     
-    print("Video created successfully: output_video.mp4")
+    ddi.debug_print("Video created successfully: output_video.mp4", debug=Debug)

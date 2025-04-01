@@ -29,6 +29,9 @@ from sklearn.model_selection import cross_val_score
 
 from termcolor import colored
 
+import Exploratory_Data_Analysis.debug_dash_infos as ddi
+import Exploratory_Data_Analysis.app_state as aps
+
 
 """#=============================================================================
    #=============================================================================
@@ -51,10 +54,12 @@ def make_regression_model(data_for_plot,x,y,weights,reg_type,reg_order,test_size
     Returns:
     - data_for_plot: Dataframe updated with the ML regression predictive values.
     """    
-
-    print()
-    print("Make ML "+reg_type)
-    print()
+    
+    Debug = aps.Debug
+    
+    ddi.debug_print("", debug=Debug) 
+    ddi.debug_print("Make ML "+reg_type, debug=Debug) 
+    ddi.debug_print("", debug=Debug) 
     
     # Split the data
     if weights is not None:
@@ -86,14 +91,14 @@ def make_regression_model(data_for_plot,x,y,weights,reg_type,reg_order,test_size
                 # Calculate mean of the negative MSE (to minimize it, hence the negative sign)
                 mean_cv_score = -cv_scores.mean()
 
-                print(f'Degree {degree} - CV Mean Squared Error: {mean_cv_score}')
+                ddi.debug_print(f'Degree {degree} - CV Mean Squared Error: {mean_cv_score}', debug=Debug) 
 
                 # Check if this is the best degree found
                 if mean_cv_score < best_score:
                     best_score = mean_cv_score
                     best_degree = degree
 
-            print(f'Best Polynomial Degree: {best_degree} with Mean Squared Error: {best_score}')
+            ddi.debug_print(f'Best Polynomial Degree: {best_degree} with Mean Squared Error: {best_score}', debug=Debug) 
 
             # Set the best degree for the final model
             reg_order = best_degree
@@ -127,13 +132,13 @@ def make_regression_model(data_for_plot,x,y,weights,reg_type,reg_order,test_size
         for i in range(1, len(coefficients[0])):
             polynomial_equation += f" + {round(coefficients[0][i], 8)} * x^{i}"
         
-        print(polynomial_equation)
+        ddi.debug_print(polynomial_equation, debug=Debug) 
 
     else:
         # For other regression types
         coeffs_summary = f"Coefficients: {model.coef_}" if hasattr(model, "coef_") else "No coefficients to display."
         intercept_summary = f"Intercept: {model.intercept_}" if hasattr(model, "intercept_") else ""
-        print(f"Model Information:\n{coeffs_summary}\n{intercept_summary}")
+        ddi.debug_print(f"Model Information:\n{coeffs_summary}\n{intercept_summary}", debug=Debug) 
 
     # Get all the errors associated to the model
     whole_errors_model(y_test, y_pred)
@@ -184,6 +189,8 @@ def whole_errors_model(y, y_pred):
       - **Ideal Value**: Tends towards 0. A lower MedAE indicates a more accurate predictive model.
     """    
     
+    Debug = aps.Debug
+    
     # Mean Squared Error (MSE)
     mse = mean_squared_error(y, y_pred)
     
@@ -199,11 +206,11 @@ def whole_errors_model(y, y_pred):
     # Median Absolute Error (MedAE)
     medae = median_absolute_error(y, y_pred)
     
-    print("Errors of the model")
-    print(f'MSE: {mse}')
-    print(f'R^2 Score: {r2}')
-    print(f'MAE: {mae}')
-    print(f'RMSE: {rmse}')
-    print(f'MedAE: {medae}')
+    ddi.debug_print("Errors of the model", debug=Debug) 
+    ddi.debug_print(f'MSE: {mse}', debug=Debug) 
+    ddi.debug_print(f'R^2 Score: {r2}', debug=Debug) 
+    ddi.debug_print(f'MAE: {mae}', debug=Debug) 
+    ddi.debug_print(f'RMSE: {rmse}', debug=Debug) 
+    ddi.debug_print(f'MedAE: {medae}', debug=Debug) 
     
-    print()
+    ddi.debug_print("", debug=Debug) 

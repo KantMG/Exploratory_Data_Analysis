@@ -25,6 +25,8 @@ import plotly.graph_objects as go
 import plotly.io as pio
 from collections import defaultdict
 
+import Exploratory_Data_Analysis.debug_dash_infos as ddi
+import Exploratory_Data_Analysis.app_state as aps
 
 """#=============================================================================
    #=============================================================================
@@ -82,7 +84,9 @@ def create_flowchart_from_dash_app(file_path, target_ids=None):
     Returns:
     - The flowchart figure.
     """    
-
+    
+    Debug = aps.Debug
+    
     # Read the Python file
     with open(file_path, 'r') as file:
         code = file.read()
@@ -96,7 +100,7 @@ def create_flowchart_from_dash_app(file_path, target_ids=None):
     callback_matches = re.findall(callback_pattern, code)
 
     if not callback_matches:
-        print("No callbacks found.")
+        ddi.debug_print("No callbacks found.", debug=Debug)
         return
 
     # Store callback dependencies (outputs and inputs) for connection
@@ -170,7 +174,7 @@ def create_flowchart_from_dash_app(file_path, target_ids=None):
                 if output_id and output_id.group(1) in target_ids:
                     target_callbacks.add(cb_name)
         
-        print("Target Callbacks:", target_callbacks)
+        ddi.debug_print("Target Callbacks:", target_callbacks, debug=Debug) 
         
         for start_callback in target_callbacks:
             to_visit = [start_callback]
@@ -181,7 +185,7 @@ def create_flowchart_from_dash_app(file_path, target_ids=None):
                 current_callback = to_visit.pop()
                 visited.add(current_callback)
                 
-                print(visited)
+                ddi.debug_print(visited, debug=Debug) 
                 # Find the outputs that are used as inputs in other callbacks
                 for output in callback_dependencies[current_callback]['outputs']:
                     for next_callback, deps in callback_dependencies.items():
@@ -190,11 +194,11 @@ def create_flowchart_from_dash_app(file_path, target_ids=None):
                             end_index = next(i for i, node in enumerate(nodes) if node['name'] == next_callback)
                             chain_edges.append((start_index, end_index))  # Chain edges for selected target IDs
                             to_visit.append(next_callback)
-                            print(start_index, end_index)
+                            ddi.debug_print((start_index, end_index), debug=Debug) 
                             
-    print("to_visit=",to_visit)
-    print("communication_edges=",communication_edges)
-    print()
+    ddi.debug_print(("to_visit=",to_visit), debug=Debug) 
+    ddi.debug_print(("communication_edges=",communication_edges), debug=Debug) 
+    ddi.debug_print("", debug=Debug) 
     # Create the figure
     fig = go.Figure()
 
@@ -336,6 +340,8 @@ def create_flowchart_from_dash_app(file_path, target_ids=None):
     - The flowchart figure.
     """    
     
+    Debug = aps.Debug
+    
     target_ids = ["tabs-1", "tabs-2", "tabs-3"]
     
     with open(file_path, 'r') as file:
@@ -383,21 +389,21 @@ def create_flowchart_from_dash_app(file_path, target_ids=None):
         if comp_id not in input_to_callback:
             return {'id': comp_id, 'branches': []}
         
-        print(f"Processing component ID: {comp_id}")
+        ddi.debug_print(f"Processing component ID: {comp_id}", debug=Debug) 
         branches = []
         
         for cb in input_to_callback[comp_id]:
-            print(f"Callback for {comp_id}: {cb}")
+            ddi.debug_print(f"Callback for {comp_id}: {cb}", debug=Debug) 
             
             # Include outputs as branches
             for output_id, _ in cb['outputs']:
-                print(f"Found output: {output_id}")
+                ddi.debug_print(f"Found output: {output_id}", debug=Debug) 
                 branches.append(build_branch(output_id))
             
         # If there are no branches but this component has inputs, include it
         if not branches:
             branches.append({'id': comp_id, 'branches': []})
-            print(f"No branches found for {comp_id}. Adding as input.")
+            ddi.debug_print(f"No branches found for {comp_id}. Adding as input.", debug=Debug) 
         
         return {'id': comp_id, 'branches': branches}
 
@@ -413,14 +419,14 @@ def create_flowchart_from_dash_app(file_path, target_ids=None):
 
     # Display the flowchart structure
     def print_flowchart(branch, level=0):
-        print("    " * level + f"- {branch['id']}")
+        ddi.debug_print("    " * level + f"- {branch['id']}", debug=Debug) 
         for sub_branch in branch['branches']:
             print_flowchart(sub_branch, level + 1)
 
-    print("Flowchart Structure:")
+    ddi.debug_print("Flowchart Structure:", debug=Debug) 
     for branch in flowchart_structure:
         print_flowchart(branch)
-        print()
+        ddi.debug_print("", debug=Debug) 
 
 
 """#=============================================================================
@@ -438,6 +444,8 @@ def build_hierarchy(flowchart_info):
     Returns:
     - final_hierarchy: The final version of the hierarchy.
     """
+    
+    Debug = aps.Debug
     
     # Initialize the hierarchy dictionary
     hierarchy = {
@@ -503,16 +511,16 @@ def build_hierarchy(flowchart_info):
 
         return nested_structure
     
-    # print()
+    # ddi.debug_print("", debug=Debug) 
     # Final output hierarchy with nested structures for inputs
     final_hierarchy = {}
     for tab in hierarchy.keys():
         final_hierarchy[tab] = {}
         for input_id in hierarchy[tab]['inputs']:
             final_hierarchy[tab][input_id] = build_nested_hierarchy(tab, input_id)
-            # print(input_id)
-            # print(final_hierarchy[tab][input_id])
-            # print()
+            # ddi.debug_print(input_id, debug=Debug) 
+            # ddi.debug_print(final_hierarchy[tab][input_id], debug=Debug) 
+            # ddi.debug_print("", debug=Debug) 
 
     return final_hierarchy
 
@@ -554,15 +562,21 @@ def simplify_hierarchy(hierarchy):
 
 
 def print_hierarchy(hierarchy):
+    
+    Debug = aps.Debug
+    
     for tab_name in hierarchy.keys():
-        print(f"{tab_name}")
+        ddi.debug_print(f"{tab_name}", debug=Debug) 
         for input_id, functions in hierarchy[tab_name].items():
             # Print each input and its corresponding functions/outputs
             input_label = f"{input_id[0]} ({input_id[1]})"
-            print(f"├── {input_label}")
-            print_functions(functions, "│   ")
+            ddi.debug_print(f"├── {input_label}", debug=Debug) 
+            print_functions(functions, "│   ", debug=Debug) 
 
 def print_functions(functions, indent):
+    
+    Debug = aps.Debug
+    
     printed_outputs = set()
     function_count = len(functions)
     for i, (function, outputs) in enumerate(functions.items()):
@@ -573,7 +587,7 @@ def print_functions(functions, indent):
             output_label = f"{output_id[0]} ({output_id[1]})"
             # Ensure each output only appears once per level
             if output_label not in printed_outputs:
-                print(f"{indent}{func_prefix} {output_label}")
+                ddi.debug_print(f"{indent}{func_prefix} {output_label}", debug=Debug) 
                 printed_outputs.add(output_label)
                 # If sub_outputs exist, recursively print them
                 if sub_outputs:

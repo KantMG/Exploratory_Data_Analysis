@@ -25,6 +25,9 @@ from collections import OrderedDict
 import plotly.express as px
 import webbrowser
 
+import Exploratory_Data_Analysis.debug_dash_infos as ddi
+import Exploratory_Data_Analysis.app_state as aps
+
 
 """#=============================================================================
    #=============================================================================
@@ -43,9 +46,12 @@ def get_max_width(col_data, col_name):
     Returns:
     - The dropdown dimension.
     """    
-
+    
+    Debug = aps.Debug
+    
     max_length = max(col_data.apply(lambda x: len(str(x))))
-    print(max_length,col_name)
+    ddi.debug_print("get_max_width", debug=Debug) 
+    ddi.debug_print("max_length / col_name : {max_length} / {col_name}", debug=Debug) 
     # Set a higher max width for 'title' column
     if col_name == 'title':
         return max(150, min(max_length * 10, 600))  # Minimum 150px, maximum 400px for 'title'
@@ -101,9 +107,7 @@ def dropdown_table(df, id_table, tab, dark_dropdown_style, uniform_style, need_d
     - data_table: The data tables. 
     """    
     
-    
-    print(df.columns)
-    
+       
     columns = df.columns
 
     # Calculate widths, ensuring 'title' is handled specifically

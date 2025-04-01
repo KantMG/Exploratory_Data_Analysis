@@ -45,7 +45,8 @@ import Exploratory_Data_Analysis.function_dataframe as fd
 import Exploratory_Data_Analysis.data_plot_preparation as dpp
 import Exploratory_Data_Analysis.figure_layout as fl
 import Exploratory_Data_Analysis.machine_learning_functions as mlf
-
+import Exploratory_Data_Analysis.debug_dash_infos as ddi
+import Exploratory_Data_Analysis.app_state as aps
 
 cmaps = [('Perceptually Uniform Sequential', [
             'viridis', 'plasma', 'inferno', 'magma']),
@@ -100,32 +101,34 @@ def create_figure(df, df_col_string, x_column, y_column, z_column, t_column, yf_
     - fig_json_serializable: The finalized plotly figure. 
     """
 
+    Debug = aps.Debug
 
     # =============================================================================
-    print(colored("========================= Start figure creation =========================", "green"))
+    ddi.debug_print(colored("========================= Start figure creation =========================", "green"), debug=Debug)
     # =============================================================================      
     # Create a Dash compatible Plotly graph figure
     fig_json_serializable = go.Figure()  # This figure can now be used with dcc.Graph in Dash
     
     # Create the label of the figure
     figname, xlabel, ylabel, zlabel, tlabel = label_fig(x_column, y_column, z_column, t_column, yf_column, zf_column, g_column, d_column, True, df_col_string)  
+    ddi.debug_print("label_fig done", debug=Debug)
     data_for_plot = []
     if x_column is not None: 
-        print("Extract from data base the required column and prepare them for the figure.")
+        ddi.debug_print("Extract from data base the required column and prepare them for the figure.", debug=Debug)
         Para, data_for_plot, x_column, y_column, z_column, t_column = dpp.data_preparation_for_plot(df, df_col_string , x_column, y_column, z_column, t_column, yf_column, zf_column, tf_column, g_column, Large_file_memory)
-        print("The data ready to be ploted is:")
-        print(data_for_plot)
-        print()
+        ddi.debug_print("The data ready to be ploted is:", debug=Debug)
+        ddi.debug_print(data_for_plot, debug=Debug)
+        ddi.debug_print("", debug=Debug)
         # Add the core of the figure
-        print("############## Core figure creation ##############")
+        ddi.debug_print("############## Core figure creation ##############", debug=Debug)
         fig_json_serializable, data_for_plot, xlabel, ylabel, zlabel, tlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, t_column, yf_column, zf_column, tf_column, g_column, d_column, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel, tlabel, df_col_string)
     
     # Update the figure layout
-    print("############## Update figure layout ##############")
+    ddi.debug_print("############## Update figure layout ##############", debug=Debug)
     fl.fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel,zlabel,tlabel,x_column,y_column,z_column,t_column,g_column,d_column,df_col_string)       
     plt.close()
     # =============================================================================
-    print(colored("=============================================================================", "green"))
+    ddi.debug_print(colored("=============================================================================", "green"), debug=Debug)
     if x_column is None: 
         return fig_json_serializable, None
     
@@ -181,20 +184,18 @@ def label_fig(x_column, y_column, z_column, t_column, yf_column, zf_column, g_co
                     zlabel = 'Average '+z_column[4:]#+' of the movies'
                 else:
                     zlabel = z_column
-                
-                if yf_column == 'Avg' and zf_column == 'Weight on y':
-                    ylabel = 'Amount of '+name_to_work_on
-                if yf_column == 'Avg on the ordinate' and zf_column == 'Weight on y':
-                    ylabel = 'Average '+y_column[4:]#+' of the movies'  
             else:
-                zlabel = None
+                zlabel = "None"
 
             if t_column is not None:
-                tlabel = t_column
+                if 'avg_' in t_column:
+                    tlabel = 'Average '+t_column[4:]#+' of the movies'
+                else:
+                    tlabel = t_column
             else:
                 tlabel = "None"
-
-
+            
+            
             if d_column == "2D":
                 if g_column == 'Colormesh':
                     ylabel = y_column
@@ -254,6 +255,8 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
     - plotly_fig: The core figure.
     """
     
+    Debug = aps.Debug
+    
     df_col_string = [col + '_split' for col in df_col_string]
 
     # Define a list of colors for the bars
@@ -273,22 +276,23 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
     if tf_column == "Avg":
         t_axis = 'avg_' + t_column
 
-    print("x_axis=", x_axis)
-    print("y_axis=", y_axis)
+    ddi.debug_print(f"x_axis = {x_axis}", debug=Debug)
+    ddi.debug_print(f"y_axis = {y_axis}", debug=Debug)
     if str(y_column)!='None':
-        print("z_axis=", z_axis)
+        ddi.debug_print(f"z_axis = {z_axis}", debug=Debug)
     if str(z_column)!='None':
-        print("t_axis=", t_axis)
+        ddi.debug_print(f"t_axis = {t_axis}", debug=Debug)
 
 
     # Rename the label of the figure
     figname, xlabel, ylabel, zlabel, tlabel = label_fig(x_axis, y_axis, z_axis, t_axis, yf_column, zf_column, g_column, d_column, False, df_col_string)  
     
+    ddi.debug_print("label_fig done", debug=Debug)
     
     if d_column=="1D": 
                 
-        print()
-        if str(y_column)=='count' and str(z_column) == 'None':
+        ddi.debug_print("", debug=Debug)
+        if str(z_column) == 'None':
             
             data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis, df_col_string)
             
@@ -312,18 +316,15 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
                     # log_x=True,
                     size_max=60
                     )
-        
-        elif (str(z_column)=='No count' and str(t_column) == 'None'):
-
-            plotly_fig = px.scatter(
-                data_for_plot,
-                x=x_axis,
-                y=y_axis,
-                size_max=60
-                )  
-        
+            if "Boxes" in g_column:
+                plotly_fig = px.box(
+                    data_for_plot, 
+                    x=x_axis, 
+                    y=y_axis,
+                    points=False)
+                
         #Case where y_column is None and z_column is None
-        elif (str(z_column)=='count' and str(t_column) == 'None') or (str(y_column)=='count' and str(z_column) != 'None' and str(t_column) == 'None'):           
+        elif str(z_column)!='None' and str(t_column) == 'None':           
 
             # if x_column in df_col_string and "Movie" not in g_column:
             #     # Grouping y_column values
@@ -338,30 +339,7 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
 
             data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis, df_col_string)
             
-            
             if "Histogram" in g_column:
-                
-                # if "Movie" in g_column:    
-                #     # First, create a new DataFrame to calculate cumulative sums
-                #     cumulative_data = data_for_plot.groupby([y_axis, z_axis])[x_axis].sum().reset_index()
-                #     # Sort the DataFrame by year (z_axis) for cumulative calculation
-                #     cumulative_data = cumulative_data.sort_values(by=[y_axis, z_axis])
-                #     # Calculate the cumulative sum for each genre (x_axis)
-                #     cumulative_data['count'] = cumulative_data.groupby(y_axis)[x_axis].cumsum()
-                #     # Use cumulative_data for the plot
-                #     data_for_plot = cumulative_data
-
-                #     # Create the animation frames by grouping your data by the z_axis
-                #     frames = data_for_plot.groupby(z_axis)
-                #     # For each frame, sort the data based on the y values or any other criteria you choose
-                #     sorted_frames = {}
-                #     for name, group in frames:
-                #         sorted_group = group.sort_values(by=y_axis, ascending=False)  # Sort by y_axis for consistency, adjust criteria as needed
-                #         sorted_frames[name] = sorted_group
-                #     # Concatenate sorted frames back into a single DataFrame
-                #     data_for_plot = pd.concat(sorted_frames.values(), ignore_index=True)
-                
-                
                 plotly_fig = px.bar(
                    data_for_plot, 
                    x=x_axis, 
@@ -371,10 +349,6 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
                    range_x=[data_for_plot[x_axis].min(), data_for_plot[x_axis].max()] if "Movie" in g_column else None,
                    range_y=[data_for_plot[y_axis].min(), data_for_plot[y_axis].max()] if "Movie" in g_column else None
                    )
-                
-                if "Movie" in g_column:    
-                    # fd.make_movie(plotly_fig)
-                    plotly_fig.write_html(x_axis+'_'+y_axis+'_'+z_axis+"_animation_plot.html")
             if "Curve" in g_column:
                 plotly_fig = px.line(
                     data_for_plot, 
@@ -393,33 +367,18 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
                     # log_x=True,
                     color=z_axis if "Movie" not in g_column else None,
                     animation_frame=z_axis if "Movie" in g_column else None
-                    )  
+                    )
             if "Boxes" in g_column:
-                if x_column in df_col_string:
-                    x_axis = y_column
-                    xlabel = y_column
-                else:
-                    y_axis = y_column
-                    ylabel = y_column
                 plotly_fig = px.box(
                     data_for_plot, 
                     x=x_axis, 
                     y=y_axis,
+                    facet_row=z_axis,
                     points=False)
-
-
-        elif str(t_column)=='No count':
-            plotly_fig = px.scatter(
-                data_for_plot,
-                x=x_axis,
-                y=y_axis,
-                size_max=60,
-                color=z_axis if "Movie" not in g_column else None,
-                animation_frame=z_axis if "Movie" in g_column else None
-            )                        
+                    
 
         #Case where z_column is not None
-        elif str(t_column)=='count' or (str(y_column)=='count' and str(t_column) != 'None') or (str(z_column)=='count' and str(t_column) != 'None'):
+        elif str(t_column)!='None':
                         
             # if y_column in df_col_string:
             #     # Grouping y_column values
@@ -433,84 +392,86 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
 
             data_for_plot = smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_for_plot, x_axis, y_axis, z_axis, df_col_string)
                         
-            # y_values = data_for_plot[y_column].unique()
             if "Histogram" in g_column:
-                
-                # if "Movie" in g_column:    
-                #     # Create the animation frames by grouping your data by the z_axis
-                #     frames = data_for_plot.groupby(z_axis)
-                #     # For each frame, sort the data based on the y values or any other criteria you choose
-                #     sorted_frames = {}
-                #     for name, group in frames:
-                #         sorted_group = group.sort_values(by=y_axis, ascending=False)  # Sort by y_axis for consistency, adjust criteria as needed
-                #         sorted_frames[name] = sorted_group
-                #     # Concatenate sorted frames back into a single DataFrame
-                #     data_for_plot = pd.concat(sorted_frames.values())
-                
-                if str(y_column)=='count':
-                    y_axis_anim, z_axis_anim, t_axis_anim = y_axis, z_axis, t_axis
-                if str(z_column)=='count':
-                    y_axis_anim, z_axis_anim, t_axis_anim = y_axis, z_axis, t_axis
-                if str(t_column)=='count':
-                    y_axis_anim, z_axis_anim, t_axis_anim = y_axis, t_axis, z_axis
-                
                 plotly_fig = px.bar(
                    data_for_plot, 
                    x=x_axis, 
-                   y=y_axis_anim,
-                   color=z_axis_anim,
-                   animation_frame=t_axis_anim,
+                   y=y_axis,
+                   color=z_axis,
+                   animation_frame=t_axis,
                    range_x=[data_for_plot[x_axis].min(), data_for_plot[x_axis].max()] if "Movie" in g_column else None,
                    range_y=[data_for_plot[y_axis].min(), data_for_plot[y_axis].max()] if "Movie" in g_column else None
                    )
-                
-                
-            elif g_column=="Curve" and (zf_column == "Avg"):
-                plotly_fig = go.Figure()
-                # Add traces for each unique group
-                for key in data_for_plot[z_axis].unique():
-                    group = data_for_plot[data_for_plot[z_axis] == key]
-                    plotly_fig.add_trace(go.Scatter(
-                        x=group[x_axis],
-                        y=group[y_axis],
-                        mode='lines',
-                        name=key,
-                        line=dict(width=group[t_axis].mean())  # Set line width based on avg thickness
-                    ))
-            elif g_column=="Curve" and (zf_column == "Avg on the ordinate"):
-                plotly_fig = px.line(
-                    data_for_plot, 
-                    x=x_axis, 
-                    y=y_axis,
-                    color=z_axis if "Movie" not in g_column else None,
-                    animation_frame=z_axis if "Movie" in g_column else None,
-                    line_group=g_column if "Movie" in g_column else None
-                    )
-            elif g_column=="Scatter":
-                print("t_column=count Scatter")
+            elif "Curve" in g_column:
+                if "Movie" not in g_column and t_axis+"_split" not in df_col_string:
+                    plotly_fig = go.Figure()
+                    # Add traces for each unique group
+                    for key in data_for_plot[z_axis].unique():
+                        group = data_for_plot[data_for_plot[z_axis] == key]
+                        plotly_fig.add_trace(go.Scatter(
+                            x=group[x_axis],
+                            y=group[y_axis],
+                            mode='lines',
+                            name=key,
+                            line=dict(width=group[t_axis].mean())  # Set line width based on avg thickness
+                        ))
+                else:
+                    plotly_fig = px.line(
+                        data_for_plot, 
+                        x=x_axis, 
+                        y=y_axis,
+                        color=z_axis,
+                        animation_frame=t_axis,
+                        range_x=[data_for_plot[x_axis].min(), data_for_plot[x_axis].max()] if "Movie" in g_column else None,
+                        range_y=[data_for_plot[y_axis].min(), data_for_plot[y_axis].max()] if "Movie" in g_column else None
+                        )
+            elif "Scatter" in g_column:
                 plotly_fig = px.scatter(
-                    data_for_plot,
-                    x=x_axis,
-                    y=y_axis,
-                    size=t_axis, #if tf_column == "Avg" or tf_column == "Weight on y" else None,
-                    size_max=60,
-                    color=z_axis if "Movie" not in g_column else None,
-                    animation_frame=z_axis if "Movie" in g_column else None
-                )
+                   data_for_plot, 
+                   x=x_axis, 
+                   y=y_axis,
+                   color=z_axis,
+                   size_max=60,
+                   size=t_axis if ("Movie" not in g_column and t_axis+"_split" not in df_col_string) else None,
+                   animation_frame=t_axis if ("Movie" in g_column or t_axis+"_split" in df_col_string) else None,
+                   range_x=[data_for_plot[x_axis].min(), data_for_plot[x_axis].max()] if ("Movie" in g_column or t_axis+"_split" in df_col_string) else None,
+                   range_y=[data_for_plot[y_axis].min(), data_for_plot[y_axis].max()] if ("Movie" in g_column or t_axis+"_split" in df_col_string) else None
+                   )
+                
 
     if g_column=="Pie": #d_column=="2D" and 
 
-            if x_column in df_col_string:
-                # Grouping y_column values
-                n = 24  # Number of top categories to keep
-                data_for_plot = fd.group_small_values(data_for_plot, x_column, 'count', n)
+        if x_column in df_col_string:
+            # Grouping y_column values
+            n = 24  # Number of top categories to keep
+            data_for_plot = fd.group_small_values(data_for_plot, x_column, 'count', n)
 
-            # x_values,fig_x_value,y_values,fig_y_value=None,None,None,None
+        # x_values,fig_x_value,y_values,fig_y_value=None,None,None,None
+        if str(y_column)=='count':
             plotly_fig = px.pie(
                 data_for_plot, 
                 values="count", 
                 names=x_column
                 )
+        elif str(y_column)!='count':
+            plotly_fig = px.sunburst(
+                data_for_plot,
+                path=[x_axis, y_axis],  # Define the hierarchy
+                values=y_axis  # Use a column for values
+            )
+        elif str(z_column)!='None':
+            plotly_fig = px.sunburst(
+                data_for_plot,
+                path=[x_axis, y_axis, z_axis],  # Define the hierarchy
+                values=z_axis  # Use a column for values
+            )
+        elif str(t_column)!='None':
+            plotly_fig = px.sunburst(
+                data_for_plot,
+                path=[x_axis, y_axis, z_axis, t_axis],  # Define the hierarchy
+                values=t_axis  # Use a column for values
+            )
+
 
     if d_column=="2D" and g_column=="Colormesh":     
         
@@ -577,9 +538,11 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
     - data_for_plot: Dataframe updated.
     """
     
+    Debug = aps.Debug
+    
     if sub_bot_smt_value % 2 == 1:
         
-        print("############## Smoothing #################")
+        ddi.debug_print("############## Smoothing #################", debug=Debug)
         
         data_for_plot['original_index'] = data_for_plot.index
         
@@ -588,9 +551,9 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
             data_for_plot[y_axis] = signal.savgol_filter(data_for_plot[y_axis],
                                    window_length, # window size used for filtering
                                    smt_order_value)
-            print("window_length=",window_length)
-            print("Data updated by the smoothing")
-            print(data_for_plot)
+            ddi.debug_print(f"window_length = {window_length}", debug=Debug)
+            ddi.debug_print("Data updated by the smoothing", debug=Debug)
+            ddi.debug_print(data_for_plot, debug=Debug)
 
         else:
             # Function to apply savgol_filter
@@ -605,9 +568,9 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
                 if window_length % 2 == 0:
                     window_length -= 1  # Make sure window_length is odd
                 
-                print("window_length=",window_length)
-                print("Amount of data", len(group[y_axis]))
-                print()
+                ddi.debug_print(f"window_length = {window_length}", debug=Debug)
+                ddi.debug_print(("Amount of data", len(group[y_axis])), debug=Debug)
+                ddi.debug_print("", debug=Debug)
                 
                 # Apply the savgol_filter
                 filtered_values = signal.savgol_filter(group[y_axis], window_length, smt_order_value)
@@ -629,8 +592,8 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
             data_for_plot = data_for_plot_filtered
         
             
-            print("Data updated by the smoothing")
-            print(data_for_plot)
+            ddi.debug_print("Data updated by the smoothing", debug=Debug)
+            ddi.debug_print(data_for_plot, debug=Debug)
             
     return data_for_plot
             
@@ -667,6 +630,7 @@ def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_colu
     - data_for_plot: Dataframe updated with the trace.
     """
     
+    Debug = aps.Debug
     
     plotly_fig = go.Figure(fig_json_serializable)
 
@@ -706,10 +670,10 @@ def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_colu
         # y_axis = 'sum_' + z_column
         t_axis = 'standard_error'        
 
-    print("x_axis=", x_axis)
-    print("y_axis=", y_axis)
-    print("z_axis=", z_axis)
-    print("t_axis=", t_axis)
+    ddi.debug_print(("x_axis=", x_axis), debug=Debug)
+    ddi.debug_print(("y_axis=", y_axis), debug=Debug)
+    ddi.debug_print(("z_axis=", z_axis), debug=Debug)
+    ddi.debug_print(("t_axis=", t_axis), debug=Debug)
 
     # Creating a DataFrame
     data_for_plot = pd.DataFrame(data_for_plot)
@@ -750,7 +714,7 @@ def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_colu
         
     plt.close()
     # =============================================================================
-    print(colored("=============================================================================", "green"))
+    ddi.debug_print(colored("=============================================================================", "green"), debug=Debug)
     
     return fig_json_serializable, data_for_plot.to_dict(orient='records') 
 
@@ -922,7 +886,9 @@ def transform_trace_to_format(trace, index_subplot):
         'x': trace.x.tolist() if hasattr(trace, 'x') and isinstance(trace.x, np.ndarray) else trace.x,
         'y': trace.y.tolist() if hasattr(trace, 'y') and isinstance(trace.y, np.ndarray) else trace.y
     }
-
+    
+    print("trace.type",trace.type)
+    
     # If it's a bar trace, eliminate any unsupported properties
     if trace.type == 'bar':
         new_trace.pop('mode', None)  # Bar traces do not have a 'mode'
@@ -933,14 +899,14 @@ def transform_trace_to_format(trace, index_subplot):
         new_trace.pop('mode', None)  # Bar traces do not have a 'mode'
         new_trace.pop('z', None)   # Bar does not use 'z'
 
-    if trace.type == 'scatter':
+    elif trace.type == 'scatter':
         new_trace.pop('mode', None)  # Bar traces do not have a 'mode'
         # new_trace['size_max'] = getattr(trace, 'size_max', None)
         # new_trace['fillcolor'] = getattr(trace, 'fillcolor', None)
         # new_trace['animation_frame'] = getattr(trace, 'animation_frame', None)
         new_trace.pop('z', None)   # Bar does not use 'z'
     
-    if trace.type == 'heatmap':
+    elif trace.type == 'heatmap':
         new_trace.pop('marker', None)  # Bar traces do not have a 'mode'
         new_trace.pop('textposition', None)  # Bar traces do not have a 'mode'
     
@@ -986,28 +952,30 @@ def figure_update_subplot(df, df_col_string, fig_with_subplots, data_for_plot,
     - data_for_plot: Data to plot updated.
     """
         
+    Debug = aps.Debug
+    
     row_index, col_index = get_subplot_position(index_subplot, nb_subplots, nb_subplots_row, nb_subplots_col)
-    print(f"Row: {row_index}, Column: {col_index}")    
+    ddi.debug_print(f"Row: {row_index}, Column: {col_index}", debug=Debug)    
 
     fig_json_serializable = go.Figure()
     # Create the label of the figure
     figname, xlabel, ylabel, zlabel, tlabel = label_fig(x_column, y_column, z_column, t_column, yf_column, zf_column, graph_type, dim_type, True, df_col_string)  
     
     if x_column is not None: 
-        print("Extract from data base the required column and prepare them for the figure.")
+        ddi.debug_print("Extract from data base the required column and prepare them for the figure.", debug=Debug)
         Para, data_for_plot, x_column, y_column, z_column, t_column = dpp.data_preparation_for_plot(df, df_col_string , x_column, y_column, z_column, t_column, yf_column, zf_column, tf_column, graph_type, Large_file_memory)
-        print("The data ready to be ploted is:")
-        print(data_for_plot)
-        print()
+        ddi.debug_print("The data ready to be ploted is:", debug=Debug)
+        ddi.debug_print(data_for_plot, debug=Debug)
+        ddi.debug_print("", debug=Debug)
         # Add the core of the figure
-        print("############## Core figure creation ##############")
+        ddi.debug_print("############## Core figure creation ##############", debug=Debug)
         figure_returned, data_for_plot, xlabel, ylabel, zlabel, tlabel = figure_plotly(fig_json_serializable, x_column, y_column, z_column, t_column, yf_column, zf_column, tf_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, data_for_plot, xlabel, ylabel, zlabel, tlabel, df_col_string)       
         fl.fig_update_layout(figure_returned, data_for_plot,figname,xlabel,ylabel,zlabel,tlabel,x_column,y_column,z_column,t_column,graph_type, dim_type,df_col_string)   
-        print()
+        ddi.debug_print("", debug=Debug)
         
     traces = figure_returned.data    
     if len(traces) == 0:  # Check if there is any trace
-        print("No traces found in the figure returned.")
+        ddi.debug_print("No traces found in the figure returned.", debug=Debug)
         return fig_with_subplots, data_for_plot  # Nothing to add, return as is
 
     fig_with_subplots = clean_trace(fig_with_subplots, index_subplot)
@@ -1041,7 +1009,7 @@ def figure_update_subplot(df, df_col_string, fig_with_subplots, data_for_plot,
         }
     )
     
-    print(plotly_fig)
+    ddi.debug_print(plotly_fig, debug=Debug)
     
     # Ensure data_for_plot is serializable
     if isinstance(data_for_plot, pd.DataFrame):

@@ -24,6 +24,10 @@ import re
 import os
 from termcolor import colored
 
+import Exploratory_Data_Analysis.debug_dash_infos as ddi
+import Exploratory_Data_Analysis.app_state as aps
+
+
 """#=============================================================================
    #=============================================================================
    #============================================================================="""
@@ -45,6 +49,7 @@ def read_and_rename(filepath, usecols=None, dtype_mapping=None, rename_map=None,
     Returns:
     - df: DataFrame
     """    
+    
     
     if large_file:
         df = dd.read_csv(
@@ -156,10 +161,11 @@ def apply_filter(df, filters):
     Returns:
     - df: Filtered DataFrame
     """    
-
-    print("Apply filter.")
     
-    print(df)
+    Debug = aps.Debug
+    
+    ddi.debug_print("Apply filter.", debug=Debug) 
+    ddi.debug_print(df, debug=Debug) 
     
     if not filters:
         return df
@@ -167,7 +173,7 @@ def apply_filter(df, filters):
     for col, filter_value in filters.items():
         
         if filter_value is not None:
-            print("Apply on the column ", col, "the filter", filter_value)
+            ddi.debug_print(f"Apply on the column {col} the filter {filter_value}", debug=Debug) 
         
         if filter_value is None or filter_value == 'All':
             continue  # Skip if filter_value is None or 'All'
@@ -217,11 +223,11 @@ def apply_filter(df, filters):
             else:
                 df = df[df[col] == filter_value]
                 
-            print(f"Filtered df for {col}:")
-            print(f"{df[col]}")
+            ddi.debug_print(f"Filtered df for {col}:", debug=Debug) 
+            ddi.debug_print(f"{df[col]}", debug=Debug) 
     
         if df.empty:
-            print("Filtered DataFrame is empty. Returning empty DataFrame.")
+            ddi.debug_print("Filtered DataFrame is empty. Returning empty DataFrame.", debug=Debug) 
 
     return df
     

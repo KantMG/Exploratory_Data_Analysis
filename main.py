@@ -40,6 +40,8 @@ import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 import plotly.io as pio
+import imageio
+import cv2
 
 import Exploratory_Data_Analysis.web_interface_style as wis
 import Exploratory_Data_Analysis.dash_callback_ids as dci
@@ -53,6 +55,9 @@ import Exploratory_Data_Analysis.hypothesis_testing_methods as htm
 
 import Exploratory_Data_Analysis.open_dataframe as od
 import Exploratory_Data_Analysis.function_dataframe as fd
+import Exploratory_Data_Analysis.debug_dash_infos as ddi
+
+import Exploratory_Data_Analysis.app_state as aps
 
 """#=============================================================================
    #=============================================================================
@@ -61,9 +66,12 @@ import Exploratory_Data_Analysis.function_dataframe as fd
 # Save the project on github with: !bash ./save_project_on_git.sh
 GitHub_adress= 'https://github.com/KantMG/Exploratory_Data_Analysis'
 
-def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_memory: False):   
+def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_memory: False, debug_info: False):   
 
-    
+    global Debug, previous_clicks, previous_reset_clicks, last_clicked_index
+    aps.Debug = debug_info
+    Debug = debug_info
+
     start_time = time.time()      
     
     shape_df1 = df1.shape
@@ -75,7 +83,6 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
     dtype_df = dtype_counts.reset_index()
     dtype_df.columns = ['dtype', 'count']  # Rename columns for clarity
     dtype_df['dtype'] = dtype_df['dtype'].astype(str)
-    
     
     # Getting numeric description and handling cases with no numeric features
     if df1.select_dtypes(include=[np.number]).empty:
@@ -96,7 +103,7 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
     
     df1_num_variance =  df1.select_dtypes(include=[np.number]).var()
     df1_num_description.loc['var'] = df1_num_variance.values
-    
+        
     if 'var' in df1_num_description.index and 'std' in df1_num_description.index:
         # Create new index order
         new_order = []
@@ -113,14 +120,14 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
     
         # Reindex the DataFrame
         df1_num_description = df1_num_description.reindex(new_order)
-    
+        
     df1_num_description = df1_num_description.reset_index()
     df1_obj_description = df1_obj_description.reset_index()
     
     correlation_matrix = df1.corr(numeric_only=True)
     
     object_cols = df1.select_dtypes(include=['object', 'int64']).columns
-    
+        
     if len(object_cols) > 1:
         List_crosstab, crosstab_titles, column_pairs = [], [], []
         
@@ -132,16 +139,12 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
                 column_pairs.append((col1, col2))  # Store the column pairs
                 crosstab_titles.append(f"{col1} cross {col2}")
     
-        print(List_crosstab)
         crosstab_options = [{'label': title, 'value': index} for index, title in enumerate(crosstab_titles)]
     
-    
-    info = df1.info()
+    # info = df1.info()
     memory_info = df1.memory_usage(deep=True)  # Get memory usage of each column
     total_memory_kb = memory_info.sum() / 1024  # Convert bytes to KB
-    print(f"Total memory usage: {total_memory_kb:.2f} KB")  # Print memory usage in KB
-    print(memory_info / 1024)  # Print memory usage per column in KB
-        
+            
     List_dim = ["1D", "2D", "3D"]
     List_graph_type = ["Histogram", "Curve", "Scatter", "Boxes", "Colormesh", "Pie", "Histogram Movie", "Curve Movie", "Scatter Movie"]
     
@@ -156,8 +159,7 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
     
     List_col_exclude_tab2 = []
     
-    print(colored("***************** Start dash ****************", "yellow"))
-    
+    ddi.debug_print(colored("***************** Start dash ****************", "yellow"), debug=Debug)    
     
     # Initialize the Dash app with suppress_callback_exceptions set to True
     app, dark_dropdown_style, uniform_style = wis.web_interface_style()
@@ -210,15 +212,15 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         
         tab = 'tab-1'
         
-        print()
-        print("Time computation=", time.time()-start_time)
-        print(colored("=====================  Tab1_content  =========================", "yellow"))
+        ddi.debug_print("", debug=Debug) 
+        ddi.debug_print(("Time computation=", time.time()-start_time), debug=Debug) 
+        ddi.debug_print(colored("=====================  Tab1_content  =========================", "yellow"), debug=Debug) 
         
         # Print all ids
         component_ids = dci.get_component_ids(app.layout)
-        print("Component IDs:", component_ids)
-            
-        print(colored("==================== End Tab1_content ========================", "yellow"))  
+        ddi.debug_print(("Component IDs:", component_ids), debug=Debug) 
+        
+        ddi.debug_print(colored("==================== End Tab1_content ========================", "yellow"), debug=Debug) 
         
         fig_dtype_df1 = px.pie(
             dtype_df, 
@@ -475,11 +477,10 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
     
         if not feature_input_value or not target_input_type or not feature_input_type:  # Return nothing if input is empty or None
             return '', ''
-    
-        print()
-        print(colored("------------ callback update_feature_value_type ------------", "red"))
-     
         
+        ddi.debug_print("", debug=Debug) 
+        ddi.debug_print(colored("------------ callback update_feature_value_type ------------", "red"), debug=Debug) 
+
         Hypothesis_test, messages, normality_fig, outlier_table = htm.Hypothesis_Testing_Methods(df1, target_input_value, feature_input_value, target_input_type, feature_input_type)
     
         Hypothesis_test_explanation = htm.get_explanation_on_Hypothesis_test(Hypothesis_test)
@@ -541,9 +542,11 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
     
     
     def tab2_content():
-        print()
-        print("Time computation=", time.time()-start_time)
-        print(colored("=====================  Tab2_content  =========================", "yellow"))
+        
+        ddi.debug_print("", debug=Debug) 
+        ddi.debug_print(("Time computation=", time.time()-start_time), debug=Debug) 
+        ddi.debug_print(colored("=====================  Tab2_content  =========================", "yellow"), debug=Debug) 
+
         tab = 'tab-2'
         # Display dropdowns without loading data initially
         
@@ -574,14 +577,14 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
                                                                          "Configuration of the subplot figure", dark_dropdown_style, uniform_style)
     
         button_saving_figure_tab2 = fds.button_modal_input_text_dropdown("save-figure-"+tab,  "Save Figure", 
-                                                                         ["png", "jpeg", "webp", "svg", "pdf"], "Enter the figure name",
+                                                                         ["png", "jpeg", "webp", "svg", "pdf", "gif", "mp4"], "Enter the figure name",
                                                                          "png", "Save Figure", dark_dropdown_style, uniform_style)
     
     
     
         component_ids = dci.get_component_ids(app.layout)
-        print("Component IDs:", component_ids)
-        print(colored("==================== End Tab2_content ========================", "yellow"))
+        ddi.debug_print(("Component IDs:", component_ids), debug=Debug) 
+        ddi.debug_print(colored("==================== End Tab2_content ========================", "yellow"), debug=Debug) 
         return html.Div([
             html.Div([
                 fds.figure_position_dash(tab,
@@ -614,8 +617,7 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         if not n_clic or n_clic % 2 == 0:
             return ''
     
-    
-        print(colored("------------ callback update_tableau_show ------------", "red"))
+        ddi.debug_print(colored("------------ callback update_tableau_show ------------", "red"), debug=Debug) 
     
         tab = "tab-2"
         
@@ -673,10 +675,9 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         [State('input_1-function-tab-2', 'value'), State('input_2-function-tab-2', 'value')]
     )
     def update_output(n_clicks, func_name, input_value):
-        print("Submit button clicks:", n_clicks)  # Check for clicks
-        print("Function Name:", func_name)  # Current function name
-        print("Input Value:", input_value)  # Value of input expression
-        
+        ddi.debug_print(("Submit button clicks:", n_clicks), debug=Debug) 
+        ddi.debug_print(("Function Name:", func_name), debug=Debug) 
+        ddi.debug_print(("Input Value:", input_value), debug=Debug)         
         if n_clicks > 0:
             try:
                 # Validate that func_name and input_value are provided
@@ -704,8 +705,8 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         [State('input_1-function-tab-2', 'value'), State('input_2-function-tab-2', 'value')]
     )
     def update_dropdown_options(n_clicks, func_name, input_value):
-        print()
-        print(colored("------------ callback update_x_dropdown_tab2 ------------", "red"))
+        ddi.debug_print("", debug=Debug) 
+        ddi.debug_print(colored("------------ callback update_x_dropdown_tab2 ------------", "red"), debug=Debug) 
         return [{'label': col, 'value': col} for col in df1.columns if col not in List_col_exclude_tab2]
     
     #  -----------------------------------------------------------------
@@ -776,15 +777,15 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         prevent_initial_call=True
     )
     def update_output(reset_click, n_clicks, input_1_value, input_2_value, input_3_value):
-    
-        print(colored("-------------- callback update_output --------------", "red"))
+        
+        ddi.debug_print(colored("-------------- callback update_output --------------", "red"), debug=Debug) 
         ctx = dash.callback_context
         triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
-        print("Triggered component:", triggered_id)
-        print()
-    
-        print("Submit button clicks:", n_clicks)  # Check for clicks
-        print("Inputs Name:", [input_1_value, input_2_value, input_3_value])  # Current function name
+        ddi.debug_print(("Triggered component:", triggered_id), debug=Debug) 
+        ddi.debug_print("", debug=Debug) 
+        
+        ddi.debug_print(("Submit button clicks:", n_clicks), debug=Debug) 
+        ddi.debug_print(("Inputs Name:", [input_1_value, input_2_value, input_3_value]), debug=Debug) 
         
         global previous_clicks, previous_reset_clicks
         # Reset button clicked
@@ -825,59 +826,49 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         [Input('tabs', 'value')]
     )
     def update_value_default_tab2(selected_x, selected_y, selected_z, selected_t, selected_tab):
-        print()
-        print(colored("------------ callback update_value_default_tab2 ------------", "red"))
-        print("Active Tab=", selected_tab)
-        print("Time computation=", time.time()-start_time)
+        ddi.debug_print("", debug=Debug) 
+        ddi.debug_print(colored("------------ callback update_value_default_tab2 ------------", "red"), debug=Debug) 
+        ddi.debug_print(("Active Tab=", selected_tab), debug=Debug) 
+        ddi.debug_print(("Time computation=", time.time()-start_time), debug=Debug) 
+
         ctx = dash.callback_context
         triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
-        print("Triggered component:", triggered_id)
-        print()
+        ddi.debug_print(("Triggered component:", triggered_id), debug=Debug) 
+        ddi.debug_print("", debug=Debug) 
         
         
         if selected_tab == 'tab-2':
-            
-            print(selected_x, selected_y, selected_z)
-            
+                        
             if selected_x is None:
-                print("X Dropdown Value is None, returning an empty list [].")
+                ddi.debug_print("X Dropdown Value is None, returning an empty list [].", debug=Debug) 
                 return dash.no_update, dash.no_update, dash.no_update, dash.no_update
             
             elif selected_x is not None and triggered_id == 'x-dropdown-tab-2' and selected_z is None:
-                print("2")
                 return dash.no_update, "count", dash.no_update, dash.no_update
             
             
-            elif selected_x is not None and triggered_id == 'y-dropdown-tab-2' and selected_y is not None and selected_y != "count" and selected_z is None:
-                print("3")
-                return dash.no_update, dash.no_update, "count", dash.no_update
+            # elif selected_x is not None and triggered_id == 'y-dropdown-tab-2' and selected_y is not None and selected_y != "count" and selected_z is None:
+            #     return dash.no_update, dash.no_update, "count", dash.no_update
     
-            elif selected_x is not None and triggered_id == 'y-dropdown-tab-2' and selected_y is not None and selected_y != "count" and selected_z is not None and selected_t is None:
-                print("4")
-                return dash.no_update, dash.no_update, "count", dash.no_update
+            # elif selected_x is not None and triggered_id == 'y-dropdown-tab-2' and selected_y is not None and selected_y != "count" and selected_z is not None and selected_t is None:
+            #     return dash.no_update, dash.no_update, "count", dash.no_update
     
-            elif selected_x is not None and triggered_id == 'y-dropdown-tab-2' and selected_y is not None and selected_y != "count" and selected_t is not None:
-                print("5")
-                return dash.no_update, dash.no_update, "count", dash.no_update
+            # elif selected_x is not None and triggered_id == 'y-dropdown-tab-2' and selected_y is not None and selected_y != "count" and selected_t is not None:
+            #     return dash.no_update, dash.no_update, "count", dash.no_update
     
     
+            # elif selected_x is not None and triggered_id == 'z-dropdown-tab-2'  and selected_z is not None and selected_z != "count" and selected_y != "count" and selected_z != "No count":
+            #     return dash.no_update, dash.no_update, dash.no_update, "count"
     
-            elif selected_x is not None and triggered_id == 'z-dropdown-tab-2'  and selected_z is not None and selected_z != "count" and selected_y != "count" and selected_z != "No count":
-                print("6")
-                return dash.no_update, dash.no_update, dash.no_update, "count"
-    
-            elif selected_x is not None and triggered_id == 'z-dropdown-tab-2'  and selected_z is None and selected_y != "count":
-                print("7")
-                return dash.no_update, "count", dash.no_update, None
+            # elif selected_x is not None and triggered_id == 'z-dropdown-tab-2'  and selected_z is None and selected_y != "count":
+            #     return dash.no_update, "count", dash.no_update, None
     
     
-            elif selected_x is not None and triggered_id == 't-dropdown-tab-2'  and selected_t is not None and selected_t != "count" and selected_t != "No count":
-                print("8")
-                return dash.no_update, "count", dash.no_update, dash.no_update
+            # elif selected_x is not None and triggered_id == 't-dropdown-tab-2'  and selected_t is not None and selected_t != "count" and selected_t != "No count":
+            #     return dash.no_update, "count", dash.no_update, dash.no_update
     
-            elif selected_x is not None and triggered_id == 't-dropdown-tab-2'  and selected_t is None and selected_z != "count" and selected_y != "count":
-                print("9")
-                return dash.no_update, dash.no_update, "count", dash.no_update
+            # elif selected_x is not None and triggered_id == 't-dropdown-tab-2'  and selected_t is None and selected_z != "count" and selected_y != "count":
+            #     return dash.no_update, dash.no_update, "count", dash.no_update
     
     
             
@@ -891,19 +882,20 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         [Input('tabs', 'value')]
     )
     def update_y_dropdown_tab2(selected_x, selected_tab):
-        print()
-        print(colored("------------ callback update_y_dropdown_tab2 ------------", "red"))
-        print("Active Tab=", selected_tab)
-        print("Time computation=", time.time()-start_time)
+        ddi.debug_print("", debug=Debug) 
+        ddi.debug_print(colored("------------ callback update_y_dropdown_tab2 ------------", "red"), debug=Debug) 
+        ddi.debug_print(("Active Tab=", selected_tab), debug=Debug) 
+        ddi.debug_print(("Time computation=", time.time()-start_time), debug=Debug) 
         ctx = dash.callback_context
         triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
-        print("Triggered component:", triggered_id)
-        print()
+        ddi.debug_print(("Triggered component:", triggered_id), debug=Debug) 
+        ddi.debug_print("", debug=Debug) 
+
         if selected_tab == 'tab-2':
             if selected_x is None:
-                print("X Dropdown Value is None, returning an empty list [].")
+                ddi.debug_print("X Dropdown Value is None, returning an empty list [].", debug=Debug) 
                 return []
-            print(f"Selected X: {selected_x}")  # Additional debugging
+            ddi.debug_print(f"Selected X: {selected_x}", debug=Debug) 
             exclude_cols=List_col_exclude_tab2
             return update_y_dropdown_utility(selected_x, df1.columns.tolist(), exclude_cols)
         return dash.no_update
@@ -916,19 +908,20 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         Input('tabs', 'value')]
     )
     def update_z_dropdown_tab2(selected_x, selected_y, selected_tab):
-        print()
-        print(colored("------------ callback update_z_dropdown_tab2 ------------", "red"))
-        print("Active Tab=", selected_tab)
-        print("Time computation=", time.time()-start_time)
+        ddi.debug_print("", debug=Debug) 
+        ddi.debug_print(colored("------------ callback update_z_dropdown_tab2 ------------", "red"), debug=Debug) 
+        ddi.debug_print(("Active Tab=", selected_tab), debug=Debug) 
+        ddi.debug_print(("Time computation=", time.time()-start_time), debug=Debug) 
+
         ctx = dash.callback_context
         triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
-        print("Triggered component:", triggered_id)
-        print()
+        ddi.debug_print(("Triggered component:", triggered_id), debug=Debug) 
+        ddi.debug_print("", debug=Debug) 
         if selected_tab == 'tab-2':
             if selected_y is None:
-                print("Y Dropdown Value is None, returning an empty list [].")
+                ddi.debug_print("Y Dropdown Value is None, returning an empty list [].", debug=Debug) 
                 return []
-            print(f"Selected y: {selected_y}")  # Additional debugging
+            ddi.debug_print(f"Selected y: {selected_y}", debug=Debug) 
             exclude_cols=List_col_exclude_tab2
             return update_z_dropdown_utility(selected_x, selected_y, df1.columns.tolist(), exclude_cols)
         return dash.no_update
@@ -942,19 +935,19 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         Input('tabs', 'value')]
     )
     def update_t_dropdown_tab2(selected_x, selected_y, selected_z, selected_tab):
-        print()
-        print(colored("------------ callback update_t_dropdown_tab2 ------------", "red"))
-        print("Active Tab=", selected_tab)
-        print("Time computation=", time.time()-start_time)
+        ddi.debug_print("", debug=Debug) 
+        ddi.debug_print(colored("------------ callback update_t_dropdown_tab2 ------------", "red"), debug=Debug) 
+        ddi.debug_print(("Active Tab=", selected_tab), debug=Debug) 
+        ddi.debug_print(("Time computation=", time.time()-start_time), debug=Debug) 
         ctx = dash.callback_context
         triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
-        print("Triggered component:", triggered_id)
-        print()
+        ddi.debug_print(("Triggered component:", triggered_id), debug=Debug) 
+        ddi.debug_print("", debug=Debug) 
         if selected_tab == 'tab-2':
             if selected_y is None:
-                print("Y Dropdown Value is None, returning an empty list [].")
+                ddi.debug_print("Y Dropdown Value is None, returning an empty list [].", debug=Debug) 
                 return []
-            print(f"Selected y: {selected_y}")  # Additional debugging
+            ddi.debug_print(f"Selected y: {selected_y}", debug=Debug) 
             exclude_cols=List_col_exclude_tab2
             return update_t_dropdown_utility(selected_x, selected_y, selected_z, df1.columns.tolist(), exclude_cols)
         return dash.no_update
@@ -967,15 +960,15 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         Input('tabs', 'value')  # Include tab value to conditionally trigger callback
     )
     def update_yfunc_dropdown_tab2(selected_y, selected_tab):
-        print()
-        print(colored("------------ callback update_yfunc_dropdown_tab2 ------------", "red"))
-        print("Active Tab=", selected_tab)
-        print("Time computation=", time.time()-start_time)
+        ddi.debug_print("", debug=Debug) 
+        ddi.debug_print(colored("------------ callback update_yfunc_dropdown_tab2 ------------", "red"), debug=Debug) 
+        ddi.debug_print(("Active Tab=", selected_tab), debug=Debug) 
+        ddi.debug_print(("Time computation=", time.time()-start_time), debug=Debug) 
         if selected_tab == 'tab-2':
             if selected_y is None:
-                print("Y Dropdown Value is None, returning an empty list [].")
+                ddi.debug_print("Y Dropdown Value is None, returning an empty list [].", debug=Debug) 
                 return [], []
-            print(f"Selected Y: {selected_y}")  # Additional debugging
+            ddi.debug_print(f"Selected Y: {selected_y}", debug=Debug)   # Additional debugging
             
             function_on_y = ["Avg"]
             
@@ -989,18 +982,18 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         Input('tabs', 'value')  # Include tab value to conditionally trigger callback
     )
     def update_zfunc_dropdown_tab2(selected_z, selected_tab):
-        print()
-        print(colored("------------ callback update_zfunc_dropdown_tab2 ------------", "red"))
-        print("Active Tab=", selected_tab)
-        print("Time computation=", time.time()-start_time)
+        ddi.debug_print("", debug=Debug) 
+        ddi.debug_print(colored("------------ callback update_zfunc_dropdown_tab2 ------------", "red"), debug=Debug) 
+        ddi.debug_print(("Active Tab=", selected_tab), debug=Debug) 
+        ddi.debug_print(("Time computation=", time.time()-start_time), debug=Debug) 
         if selected_tab == 'tab-2':
             if selected_z is None:
-                print("Z Dropdown Value is None, returning an empty list [].")
+                ddi.debug_print("Z Dropdown Value is None, returning an empty list [].", debug=Debug) 
                 return [], []  # Return an empty options list if the DF is not ready
-            # Proceed to get options based on selected_x and stored_df1...
-            print(f"Selected Z: {selected_z}")  # Additional debugging
+            # Proceed to get options based on selected_x and stored_df1..
+            ddi.debug_print(f"Selected Z: {selected_z}", debug=Debug)   # Additional debugging
             
-            function_on_z = ["Avg", "Weight on y"]
+            function_on_z = ["Avg"]
             
             return update_func_dropdown_utility(selected_z, function_on_z, 'Avg')
         return dash.no_update, dash.no_update
@@ -1013,18 +1006,18 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         Input('tabs', 'value')  # Include tab value to conditionally trigger callback
     )
     def update_tfunc_dropdown_tab2(selected_t, selected_tab):
-        print()
-        print(colored("------------ callback update_tfunc_dropdown_tab2 ------------", "red"))
-        print("Active Tab=", selected_tab)
-        print("Time computation=", time.time()-start_time)
+        ddi.debug_print("", debug=Debug) 
+        ddi.debug_print(colored("------------ callback update_tfunc_dropdown_tab2 ------------", "red"), debug=Debug) 
+        ddi.debug_print(("Active Tab=", selected_tab), debug=Debug) 
+        ddi.debug_print(("Time computation=", time.time()-start_time), debug=Debug) 
         if selected_tab == 'tab-2':
             if selected_t is None:
-                print("T Dropdown Value is None, returning an empty list [].")
+                ddi.debug_print("T Dropdown Value is None, returning an empty list [].", debug=Debug) 
                 return [], []  # Return an empty options list if the DF is not ready
             # Proceed to get options based on selected_x and stored_df1...
-            print(f"Selected T: {selected_t}")  # Additional debugging
+            ddi.debug_print(f"Selected T: {selected_t}", debug=Debug)   # Additional debugging
             
-            function_on_t = ["Avg", "Weight on y"]
+            function_on_t = ["Avg"]
             
             return update_func_dropdown_utility(selected_t, function_on_t, 'Avg')
         return dash.no_update, dash.no_update
@@ -1038,10 +1031,10 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         Input('tabs', 'value')  # Include tab value to conditionally trigger callback
     )
     def update_dim_dropdown_tab2(selected_y, selected_tab):
-        print()
-        print(colored("-------- callback update_dim_dropdown_tab2 --------", "red"))
-        print("Active Tab=", selected_tab)
-        print("Time computation=", time.time()-start_time)
+        ddi.debug_print("", debug=Debug) 
+        ddi.debug_print(colored("-------- callback update_dim_dropdown_tab2 --------", "red"), debug=Debug) 
+        ddi.debug_print(("Active Tab=", selected_tab), debug=Debug) 
+        ddi.debug_print(("Time computation=", time.time()-start_time), debug=Debug) 
         if selected_tab == 'tab-2':
             if selected_y is None:
                 return [{'label': "1D", 'value': "1D"}, {'label': "2D", 'value': "2D"}]  # Return an empty options list if the DF is not ready
@@ -1055,10 +1048,10 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         Input('tabs', 'value')  # Include tab value to conditionally trigger callback
     )
     def update_graph_dropdown_tab2(selected_dim, selected_tab):
-        print()
-        print(colored("------------ callback update_graph_dropdown_tab2 ------------", "red"))
-        print("Active Tab=", selected_tab)
-        print("Time computation=", time.time()-start_time)
+        ddi.debug_print("", debug=Debug) 
+        ddi.debug_print(colored("------------ callback update_graph_dropdown_tab2 ------------", "red"), debug=Debug) 
+        ddi.debug_print(("Active Tab=", selected_tab), debug=Debug) 
+        ddi.debug_print(("Time computation=", time.time()-start_time), debug=Debug) 
         if selected_tab == 'tab-2':
             if selected_dim == "1D":
                 return [{'label': col, 'value': col} for col in List_graph_type if col not in ("Colormesh", "Pie")], 'Histogram'
@@ -1108,9 +1101,8 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
                           sub_bot_filter_value, *args):
     
         global previous_clicks, last_clicked_index
-        
-        print()
-        print(colored("------------ callback update_graph_tab2 ------------", "red"))
+        ddi.debug_print("", debug=Debug) 
+        ddi.debug_print(colored("------------ callback update_graph_tab2 ------------", "red"), debug=Debug) 
         current_fig = args[-2]
         data_for_plot = args[-1]
         filter_values = list(args[0:len(List_col_tab2)])
@@ -1120,34 +1112,26 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         # Now to get the flat list
         if subplot_button_clicks and isinstance(subplot_button_clicks, list):
             subplot_button_clicks = subplot_button_clicks[0]  # Access the first element
-            print("Subplot Button Clicks:", subplot_button_clicks)
+            ddi.debug_print(("Subplot Button Clicks:", subplot_button_clicks), debug=Debug) 
         else:
             subplot_button_clicks = []  # Handle cases where subplot_button_clicks might be empty or wrongly structured
-            print("No subplot button clicks found.")
+            ddi.debug_print(("No subplot button clicks found."), debug=Debug) 
     
         ctx = dash.callback_context
         triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
-        print("Triggered component:", triggered_id)
-        print()
+        ddi.debug_print(("Triggered component:", triggered_id), debug=Debug) 
         
         if triggered_id in ["dropdown-regression-tab-2", "input-regression-tab-2", "dropdown-smoothing-tab-2", "input-smoothing-tab-2", "input_1-subplot-tab-2", "input_2-subplot-tab-2", "input_3-subplot-tab-2", "dropdown-save-figure-tab-2", "input-save-figure-tab-2" ]:
             return dash.no_update
     
         df_col_numeric = df1.select_dtypes(include=['float64', 'int64']).columns.tolist()
         df_col_numeric.append('count')
-        df_col_numeric.append('No count')
         df_col_all = df1.columns.tolist()
         df_col_all.append('count')
-        df_col_all.append('No count')
         df_col_string = [col for col in df_col_all if col not in df_col_numeric]   
-        
-        if t_dropdown_value is not None and t_dropdown_value not in df_col_numeric:
-            print("t-dropdown-tab-2 is "+t_dropdown_value+" which is a string column.")
-            print("Please select a numeric column for t-dropdown-tab-2")
-            return dash.no_update
-    
+            
         if graph_dropdown_value is None:
-            print("Please select a graphic type.")
+            ddi.debug_print("Please select a graphic type.", debug=Debug) 
             return dash.no_update
         
         if triggered_id in list([f'fig-dropdown-{col}-tab-2' for col in List_col_tab2]):
@@ -1164,12 +1148,71 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
             fig_json_serializable = go.Figure(current_fig)
             filename = svf_order_value
             format_fig = svf_dropdown_value
-            fig_json_serializable["layout"]["updatemenus"] = []
-            pio.write_image(fig_json_serializable, f"{filename}.{format_fig}")
+            fig_json_serializable["layout"]["updatemenus"] = [] 
+            
+            if format_fig != "gif" and format_fig != "mp4":
+                pio.write_image(fig_json_serializable, f"{filename}.{format_fig}")
+                
+            else:
+                # Step 1: Save each frame as an image
+                frame_filenames = []  # Keep track of frame filenames
+                current_fig = fig_json_serializable
+                for i, frame in enumerate(fig_json_serializable.frames):
+                    
+                    # Create a new figure for the current frame
+                    frame_fig = go.Figure()
+                    
+                    # Append the current frame's data to the new figure
+                    for data in frame.data:
+                        frame_fig.add_trace(data)
+                    
+                    frame_fig.update_layout(current_fig.layout)
+                    frame_filename = f"frame_{i}.png"  # Specify a filename
+                    pio.write_image(frame_fig, frame_filename)  # Save the current frame
+                    frame_filenames.append(frame_filename)  # Add to the list
+                
+                if format_fig == "gif":
+                    duration_frame = round(10 / i)
+                    
+                    # Step 2: Create a GIF from the saved frames
+                    gif_filename = f"{filename}.{format_fig}"
+                    with imageio.get_writer(gif_filename, mode='I', duration=duration_frame) as writer:  # Set duration for frame display
+                        for frame_filename in frame_filenames:
+                            image = imageio.imread(frame_filename)
+                            writer.append_data(image)
+                            
+                if format_fig == "mp4":
+                    if i<20:
+                        frame_per_second = i
+                    else:
+                        frame_per_second = 10
+                    
+                    # Step 2: Create an MP4 from the saved frames
+                    video_filename = f"{filename}.{format_fig}"
+                    frame = cv2.imread(frame_filenames[0])  # Read the first frame to get dimensions
+                    height, width, layers = frame.shape
+                    
+                    # Create a video writer object
+                    fourcc = cv2.VideoWriter_fourcc(*'mp4v')  # MP4 codec
+                    video = cv2.VideoWriter(video_filename, fourcc, frame_per_second, (width, height))  # 10 fps
+                    
+                    # Write each frame to the video
+                    for frame_filename in frame_filenames:
+                        frame = cv2.imread(frame_filename)
+                        video.write(frame)
+                    
+                    # Release the video writer object
+                    video.release()
+                    cv2.destroyAllWindows()
+                    
+                    print(f"Video saved as {video_filename}")        
+                
+                
+                
+            
             return dash.no_update
-        
-        print("Active Tab=", selected_tab)
-        print("Time computation=", time.time()-start_time)
+        ddi.debug_print(("Active Tab=", selected_tab), debug=Debug) 
+        ddi.debug_print(("Time computation=", time.time()-start_time), debug=Debug) 
     
         df1_filtered = od.apply_filter(df1, filter_values)
         
@@ -1181,12 +1224,12 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         try:
             parsed_id = json.loads(triggered_id)
         except json.JSONDecodeError:
-            print("Could not decode JSON.")
+            ddi.debug_print("Could not decode JSON.", debug=Debug) 
             parsed_id = {}
     
         # Check if the parsed_id corresponds to a subplot button
         if parsed_id.get('type') == 'subplot-button':
-            print('subplot-button type, return no update.')
+            ddi.debug_print('subplot-button type, return no update.', debug=Debug) 
             if all(click == 0 for click in subplot_button_clicks) :
     
                 return update_graph_subplot_creation(x_dropdown_value, y_dropdown_value, z_dropdown_value, t_dropdown_value,
@@ -1196,12 +1239,10 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
                                             current_fig, data_for_plot)        
             
             else:
-                print(previous_clicks)
                 for index, (prev, curr) in enumerate(zip(previous_clicks, subplot_button_clicks)):
-                    print(curr , prev)
                     if curr > prev:  # If current clicks > previous clicks, this button was clicked
                         last_clicked_index = index
-                        print(f"Subplot button at index {index} was clicked.")
+                        ddi.debug_print(f"Subplot button at index {index} was clicked.", debug=Debug) 
         
                         # Update the previous clicks
                         previous_clicks = subplot_button_clicks.copy()
@@ -1209,9 +1250,9 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         
         # Check whether subplot_button_clicks is valid and not empty
         if not subplot_button_clicks:
-            print("No subplot buttons have been clicked. The figure is unique.")  
+            ddi.debug_print("No subplot buttons have been clicked. The figure is unique.", debug=Debug) 
         elif all(x == 0 for x in subplot_button_clicks):
-            print("Subplot buttons are all 0.")
+            ddi.debug_print("Subplot buttons are all 0.", debug=Debug) 
             return update_graph_subplot(x_dropdown_value, y_dropdown_value, z_dropdown_value, t_dropdown_value,
                                         yfunc_dropdown_value, zfunc_dropdown_value, tfunc_dropdown_value,
                                         graph_dropdown_value, dim_dropdown_value,
@@ -1221,7 +1262,7 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         else:           
             # Use last_clicked_index for any needed logic
             if last_clicked_index is not None:
-                print(f"Last clicked subplot button index: {last_clicked_index}")
+                ddi.debug_print(f"Last clicked subplot button index: {last_clicked_index}", debug=Debug) 
                 # Additional logic based on the last clicked button can go here
     
             return update_graph_subplot(x_dropdown_value, y_dropdown_value, z_dropdown_value, t_dropdown_value,
@@ -1246,7 +1287,6 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         Utility function to generate dropdown options for the y-axis based on the selected x-axis column and dataframe.
         """
         List_cols.append('count')
-        List_cols.append('No count')
         return [{'label': col, 'value': col} for col in List_cols 
                         if col != selected_x and col not in exclude_cols]
     
@@ -1255,7 +1295,6 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         Utility function to generate dropdown options for the z-axis based on the selected x-axis and y-axis column and dataframe.
         """
         List_cols.append('count')
-        List_cols.append('No count')
         return [{'label': col, 'value': col} for col in List_cols 
                         if col not in (selected_x, selected_y) and col not in exclude_cols]
     
@@ -1264,7 +1303,6 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         Utility function to generate dropdown options for the t-axis based on the selected x-axis, y-axis and z-axis column and dataframe.
         """
         List_cols.append('count')
-        List_cols.append('No count')
         return [{'label': col, 'value': col} for col in List_cols 
                         if col not in (selected_x, selected_y, selected_z) and col not in exclude_cols]
     
@@ -1292,7 +1330,6 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
             # Create a copy of the DataFrame to avoid modifying the original stored data
             filtered_data_graph = df.copy()
         # Create the figure based on filtered data
-    
         fig, data_for_plot = fc.create_figure(filtered_data_graph, df_col_string, x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, large_file_memory)
         return fig, data_for_plot
     
