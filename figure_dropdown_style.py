@@ -481,7 +481,7 @@ def button_modal_double_input(id_subname, text_button, placeholder_input_1, plac
         ],
         id="modal-"+id_subname,
         is_open=False,  # Initially closed
-        className='top-modal',  # Apply the custom class here
+        className='top-modal custom-modal',  # Apply the custom class here
         centered=True,
         size="lg",
     ),
@@ -532,6 +532,7 @@ def button_modal_dropdown_input(id_subname, text_button, option_dropdown, placeh
             dbc.ModalHeader(dbc.ModalTitle(text_modal), style={'fontSize': '24px'}),
             dbc.ModalBody(
                 [   
+                    html.Div([
                     dcc.Dropdown(
                         id="dropdown-"+id_subname,
                         options=option_dropdown,
@@ -542,6 +543,8 @@ def button_modal_dropdown_input(id_subname, text_button, option_dropdown, placeh
                     ),
                     html.Span(":", style={'margin': '0 10px'}),
                     dcc.Input(id="input-"+id_subname, type="number", style=dropdown_style, className='dash-input dynamic-width', placeholder=placeholder_input),
+                    ], style={'display': 'flex', 'margin-left': '40px', 'margin-right': '400px', 'margin-bottom': '10px'})
+                
                 ],
                 style={'marginLeft': '20px'}
             ),
@@ -552,7 +555,7 @@ def button_modal_dropdown_input(id_subname, text_button, option_dropdown, placeh
         ],
         id="modal-"+id_subname,
         is_open=False,  # Initially closed
-        className='top-modal',  # Apply the custom class here
+        className='top-modal custom-modal',  # Apply the custom class here
         centered=True,
         size="lg",
     ),
@@ -604,7 +607,7 @@ def button_modal_input_text_dropdown(id_subname, text_button, option_dropdown, p
             dbc.ModalHeader(dbc.ModalTitle(text_modal), style={'fontSize': '24px'}),
             dbc.ModalBody(
                 [   
-
+                    html.Div([
                     dcc.Input(id="input-"+id_subname, type="text", style=dropdown_style, className='dash-input dynamic-width', placeholder=placeholder_input),
 
                     html.Span(":", style={'margin': '0 10px'}),
@@ -617,6 +620,7 @@ def button_modal_input_text_dropdown(id_subname, text_button, option_dropdown, p
                         style=dropdown_style,
                         className='dash-dropdown'
                     ),
+                    ], style={'display': 'flex', 'margin-left': '40px', 'margin-right': '10px', 'margin-bottom': '10px'})
 
                 ],
                 style={'marginLeft': '20px'}
@@ -628,7 +632,7 @@ def button_modal_input_text_dropdown(id_subname, text_button, option_dropdown, p
         ],
         id="modal-"+id_subname,
         is_open=False,  # Initially closed
-        className='top-modal',  # Apply the custom class here
+        className='top-modal custom-modal',  # Apply the custom class here
         centered=True,
         size="lg",
     ),
@@ -671,7 +675,7 @@ def button_modal_dropdown_and_double_input(id_subname, text_button, option_dropd
         
     """       
 
-    dropdown_style = {'width': f'200px', 'height': '40px', 'boxSizing': 'border-box'}
+    dropdown_style = {'width': f'160px', 'height': '40px', 'boxSizing': 'border-box'}
 
         
     return html.Div([
@@ -703,7 +707,7 @@ def button_modal_dropdown_and_double_input(id_subname, text_button, option_dropd
         ],
         id="modal-"+id_subname,
         is_open=False,  # Initially closed
-        className='top-modal',  # Apply the custom class here
+        className='top-modal custom-modal',  # Apply the custom class here
         centered=True,
         size="lg",
     ),
@@ -746,7 +750,7 @@ def button_modal_subplot_creation(id_subname, text_button, placeholder_input_1, 
         
     """       
 
-    dropdown_style = {'width': f'200px', 'height': '40px', 'boxSizing': 'border-box'}
+    dropdown_style = {'width': f'160px', 'height': '40px', 'boxSizing': 'border-box'}
 
         
     return html.Div([
@@ -779,7 +783,7 @@ def button_modal_subplot_creation(id_subname, text_button, placeholder_input_1, 
         ],
         id="modal-"+id_subname,
         is_open=False,  # Initially closed
-        className='top-modal',  # Apply the custom class here
+        className='top-modal custom-modal',  # Apply the custom class here
         centered=True,
         size="lg",
     ),
@@ -855,9 +859,223 @@ def buttons_subplots(id_subname, text_button, nb_buttons, nb_buttons_row, nb_but
    #============================================================================="""
 
 
+def button_modal_board_for_machine_learning(id_subname, text_button, text_modal,
+                                            num_option, ohe_option, ode_option,
+                                            num_imputer, ohe_imputer, ode_imputer,
+                                            num_encoder, ohe_encoder, ode_encoder,
+                                            model_option, text_model, test_size_val, target_option,
+                                            dark_dropdown_style, uniform_style):
+
+    """
+    Goal: Create a button which give access to a modal.
+    The modal contains a dropdown and an input with a submit button.
+
+    Parameters:
+    - id_subname: Part of all the id name associated with this button modal.
+    - text_button: Text on the button.
+    - text_modal: Text at the Head of the modal.
+
+    - num_option: Options for numerical features.
+    - ohe_option: Options for nominal features.
+    - ode_option: Options for ordinal features.
+    
+    - num_imputer: Imputer for numerical features.
+    - ohe_imputer: Imputer for nominal features.
+    - ode_imputer: Imputer for ordinal features.
+
+    - num_encoder: Encoder for numerical features.
+    - ohe_encoder: Encoder for nominal features.
+    - ode_encoder: Encoder for ordinal features.
+
+    - model_option: Model type (Regression/Classification).
+    - text_model: Placeholder in the model input.
+    
+    - test_size_val: The ratio of testing value for the fit.
+    
+    - target_option: Options for the target.
+
+    - dark_dropdown_style: Color style of the dropdown.
+    - uniform_style: Color style of the dropdown.
+
+    Returns:
+    - The finalized dash button with its modal content.    
+    """       
+
+    dropdown_style = {'width': f'430px', 'height': '40px', 'boxSizing': 'border-box'}
+
+
+    # Create input fields with more control over positioning
+    modal_body = html.Div([
+        
+        dbc.Row([
+
+            html.Div([
+                dbc.Label("Target:", style={'fontSize': '24px', 'margin-right': '10px'}),
+                dcc.Dropdown(id='target-' + id_subname, options=target_option,
+                             clearable=True, style={'width': f'300px', 'height': '30px', 'boxSizing': 'border-box'}, className='dash-dropdown'),
+            ], style={'display': 'flex', 'margin-left': '40px', 'margin-right': '400px', 'margin-bottom': '10px'}),
+            
+            html.Div([
+                dbc.Label("Test Size   :    ", style={'fontSize': '24px', 'margin-right': '10px'}),
+                dbc.Input(id='test-size-' + id_subname, value=test_size_val, 
+                           style={'width': f'100px', 'height': '40px', 'boxSizing': 'border-box'}, className='dash-input dynamic-width'),
+            ], style={'display': 'flex', 'margin-right': '20px', 'margin-bottom': '10px'})
+
+        ], style={'display': 'flex','textAlign': 'center', 'margin-bottom': '20px'}),
+
+
+
+        # Numerical Features Section
+        html.Div([
+            dbc.Label("Numerical Features   :    ", style={'textAlign': 'center', 'fontSize': '24px', 'margin-left': '10px', 'margin-right': '10px'}),
+            dcc.Dropdown(id='num-features-' + id_subname, multi=True, options=num_option,
+                         clearable=True, style={'width': f'900px', 'height': '30px', 'boxSizing': 'border-box'}, className='dash-dropdown'),
+        ], style={'display': 'flex','textAlign': 'center', 'margin-bottom': '20px'}),  # Center alignment
+        
+
+        html.Div([
+            html.Div([
+                dbc.Label("Imputer   :    ", style={'textAlign': 'center', 'fontSize': '20px'}),
+                dbc.Input(id='num-imputer-' + id_subname, value=num_imputer,
+                          style={**dropdown_style, 'display': 'inline-block'}, 
+                          className='dash-input dynamic-width'),
+                dbc.Button("?", href="https://scikit-learn.org/stable/modules/impute.html", target="_blank", style={"color": "#4682B4", 'fontSize': '18px', 'margin-left': '10px'}),
+            ], style={'textAlign': 'center', 'margin-bottom': '20px', 'margin-right': '20px', 'display': 'inline-block', 'width': 'auto'}),  # Center alignment
+        
+            html.Div(style={'display': 'inline-block', 'margin-bottom': '20px', 'margin-left': '20px', 'margin-right': '20px', 'margin': '0 10px', 'verticalAlign': 'middle', 'fontSize': '24px'}, children='➡️'),
+        
+            html.Div([
+                dbc.Label("Encoder   :    ", style={'textAlign': 'center', 'fontSize': '20px'}),
+                dbc.Input(id='num-encoder-' + id_subname, value=num_encoder,
+                          style={**dropdown_style, 'display': 'inline-block'}, 
+                          className='dash-input dynamic-width'),
+                dbc.Button("?", href="https://scikit-learn.org/stable/modules/preprocessing.html#encoding-categorical-features", target="_blank", style={"color": "#4682B4", 'fontSize': '18px', 'margin-left': '10px'}),
+            ], style={'textAlign': 'center', 'margin-bottom': '20px', 'margin-left': '20px', 'display': 'inline-block', 'width': 'auto'})  # Center alignment
+        ], style={'textAlign': 'center', 'margin-bottom': '20px', 'margin-left': '20px', 'display': 'flex', 'alignItems': 'center'}
+            ),  # Use flexbox for alignment
+
+
+
+        # Ordinal Features Section
+        html.Div([
+            dbc.Label("Ordinal Features   :    ", style={'textAlign': 'center', 'fontSize': '24px', 'margin-left': '10px', 'margin-right': '10px'}),
+            dcc.Dropdown(id='ode-features-' + id_subname, multi=True, options=ode_option,
+                         clearable=True, style={'width': f'900px', 'height': '30px', 'boxSizing': 'border-box'}, className='dash-dropdown'),
+        ], style={'display': 'flex','textAlign': 'center', 'margin-bottom': '20px'}),  # Center alignment
+
+
+        html.Div([
+            html.Div([
+                dbc.Label("Imputer   :    ", style={'textAlign': 'center', 'fontSize': '20px'}),
+                dbc.Input(id='ode-imputer-' + id_subname, value=ode_imputer,
+                          style={**dropdown_style, 'display': 'inline-block'}, 
+                          className='dash-input dynamic-width'),
+                dbc.Button("?", href="https://scikit-learn.org/stable/modules/impute.html", target="_blank", style={"color": "#4682B4", 'fontSize': '18px', 'margin-left': '10px'}),
+            ], style={'textAlign': 'center', 'margin-bottom': '20px', 'margin-right': '20px', 'display': 'inline-block', 'width': 'auto'}),  # Center alignment
+        
+            html.Div(style={'display': 'inline-block', 'margin-bottom': '20px', 'margin-left': '20px', 'margin-right': '20px', 'margin': '0 10px', 'verticalAlign': 'middle', 'fontSize': '24px'}, children='➡️'),
+        
+            html.Div([
+                dbc.Label("Encoder   :    ", style={'textAlign': 'center', 'fontSize': '20px'}),
+                dbc.Input(id='ode-encoder-' + id_subname, value=ode_encoder,
+                          style={**dropdown_style, 'display': 'inline-block'}, 
+                          className='dash-input dynamic-width'),
+                dbc.Button("?", href="https://scikit-learn.org/stable/modules/preprocessing.html#encoding-categorical-features", target="_blank", style={"color": "#4682B4", 'fontSize': '18px', 'margin-left': '10px'}),
+            ], style={'textAlign': 'center', 'margin-bottom': '20px', 'margin-left': '20px', 'display': 'inline-block', 'width': 'auto'})  # Center alignment
+        ], style={'textAlign': 'center', 'margin-bottom': '20px', 'margin-left': '20px', 'display': 'flex', 'alignItems': 'center'}
+            ),  # Use flexbox for alignment
+
+
+
+
+        # Nominal Features Section
+        html.Div([
+            dbc.Label("Nominal Features   :    ", style={'textAlign': 'center', 'fontSize': '24px', 'margin-left': '10px', 'margin-right': '10px'}),
+            dcc.Dropdown(id='ohe-features-' + id_subname, multi=True, options=ohe_option,
+                         clearable=True, style={'width': f'900px', 'height': '30px', 'boxSizing': 'border-box'}, className='dash-dropdown'),
+        ], style={'display': 'flex','textAlign': 'center', 'margin-bottom': '20px'}),  # Center alignment
+
+
+        html.Div([
+            html.Div([
+                dbc.Label("Imputer   :    ", style={'textAlign': 'center', 'fontSize': '20px'}),
+                dbc.Input(id='ohe-imputer-' + id_subname, value=ohe_imputer,
+                          style={**dropdown_style, 'display': 'inline-block'}, 
+                          className='dash-input dynamic-width'),
+                dbc.Button("?", href="https://scikit-learn.org/stable/modules/impute.html", target="_blank", style={"color": "#4682B4", 'fontSize': '18px', 'margin-left': '10px'}),
+            ], style={'textAlign': 'center', 'margin-bottom': '20px', 'margin-right': '20px', 'display': 'inline-block', 'width': 'auto'}),  # Center alignment
+        
+            html.Div(style={'display': 'inline-block', 'margin-bottom': '20px', 'margin-left': '20px', 'margin-right': '20px', 'margin': '0 10px', 'verticalAlign': 'middle', 'fontSize': '24px'}, children='➡️'),
+        
+            html.Div([
+                dbc.Label("Encoder   :    ", style={'textAlign': 'center', 'fontSize': '20px'}),
+                dbc.Input(id='ohe-encoder-' + id_subname, value=ohe_encoder,
+                          style={**dropdown_style, 'display': 'inline-block'}, 
+                          className='dash-input dynamic-width'),
+                dbc.Button("?", href="https://scikit-learn.org/stable/modules/preprocessing.html#encoding-categorical-features", target="_blank", style={"color": "#4682B4", 'fontSize': '18px', 'margin-left': '10px'}),
+            ], style={'textAlign': 'center', 'margin-bottom': '20px', 'margin-left': '20px', 'display': 'inline-block', 'width': 'auto'})  # Center alignment
+        ], style={'textAlign': 'center', 'margin-bottom': '20px', 'margin-left': '20px', 'display': 'flex', 'alignItems': 'center'}
+            ),  # Use flexbox for alignment
+
+
+
+        # Model Section
+        html.Div([
+            html.Div([ 
+            dbc.Label("Model of  ", style={'textAlign': 'center', 'fontSize': '28px', 'margin-right': '10px', 'display': 'inline-block'}),
+
+            dcc.Dropdown(id='type-model-' + id_subname, options=model_option,
+                         clearable=True, style={'width': f'160px', 'height': '30px', 'boxSizing': 'border-box', 'margin-left': '10px', 'margin-right': '10px', 'display': 'inline-block'}, className='dash-dropdown'),            
+            ], style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'center'}),
+            
+            dbc.Input(id='model-' + id_subname, placeholder=text_model, 
+                      style=dropdown_style, className='dash-input dynamic-width'),
+            dbc.Button("?", href="https://scikit-learn.org/stable/supervised_learning.html", target="_blank", style={"color": "#4682B4", 'fontSize': '18px', 'margin-left': '10px'}),
+        ], style={'textAlign': 'center', 'margin-bottom': '20px'}),  # Center alignment
+
+        # Submit Button
+        html.Div([
+            html.Div(
+                dbc.Button("Submit", id='submit-button-' + id_subname, n_clicks=0, className='button'), 
+                style={'display': 'inline-block', 'margin-top': '10px'}
+            ),
+            html.Div(
+                dbc.Button("Close", id='close-button-' + id_subname, n_clicks=0, className='button'), 
+                style={'display': 'inline-block', 'margin-top': '10px', 'margin-left': 'auto'}
+            )
+        ], style={'display': 'flex', 'alignItems': 'center', 'justifyContent': 'space-between', 'margin-top': '10px'})
+    ])
+
+
+    # Modal Definition
+    modal = dbc.Modal(
+        [
+            dbc.ModalHeader(dbc.ModalTitle(text_modal), style={'fontSize': '30px', 'alignItems': 'center'}),
+            dbc.ModalBody(modal_body),
+        ],
+        id="modal-" + id_subname,
+        is_open=False,  # Initially closed
+        className='top-modal',  # Apply the custom class here
+        centered=True,
+        size="lg",
+    )
+
+    # Return the Dash button and modal
+    return html.Div([
+        dbc.Button(text_button, id="open-modal-" + id_subname, n_clicks=0, className='button'),
+        modal,
+        html.Div(id="output-div-" + id_subname)  # Output div for results
+    ])
+
+
+"""#=============================================================================
+   #=============================================================================
+   #============================================================================="""
+
+
 def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig, 
                          dropdowns_with_labels_for_fig_filter, button_dropdown_function, 
-                         button_dropdown_regression, button_dropdown_smoothing, button_subplot, button_saving_figure):
+                         button_dropdown_ml_model, button_dropdown_smoothing, button_subplot, button_saving_figure):
 
     """
     Goal: Create the dropdown associated to a figure.
@@ -870,7 +1088,7 @@ def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig,
     - dropdowns_with_labels_for_fig: The figue dropdowns.
     - dropdowns_with_labels_for_fig_filter: The figue dropdowns for extra filters (with or without checkbox).
     - button_dropdown_function: The button that open the modal for function creation.
-    - button_dropdown_regression: The button that open the modal for regresison creation.
+    - button_dropdown_ml_model: The button that open the modal for ML model creation.
     - button_dropdown_smoothing: The button that open the modal for smoothing.
     - button_subplot: The button that open the modal for subplot creation.
     - button_saving_figure :  The button to save the current figure.
@@ -937,7 +1155,7 @@ def figure_position_dash(tab, idgraph, dropdowns_with_labels_for_fig,
                             html.Span("", style={'margin': '0 10px'}),
                             
                             html.Div(
-                                button_dropdown_regression,
+                                button_dropdown_ml_model,
                                 style={
                                     'display': 'flex',
                                     'justify-content': 'flex-start',

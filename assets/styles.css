@@ -94,13 +94,19 @@ body {
     transform: translateX(-50%); /* Center the modal horizontally */
     z-index: 1050; /* Ensure it appears above other content */
     width: 100%; /* Width can be adjusted as necessary */
-    max-width: 600px; /* Set a maximum width */
+    max-width: 1200px; /* Set a maximum width */
     background-color: #1e1e1e; /* Set modal background color */
     color: white; /* Change text color for better readability */
     border-radius: 8px; /* Optional: round the corners */
     border: 2px solid gold; /* Set gold border */
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.5); /* Optional: add a shadow for emphasis */
 }
+
+.custom-modal {
+    max-width: 500px; /* Set the max width */
+    width: 80%; /* Or any other width percentage */
+}
+
 
 .modal-footer {
     display: flex;

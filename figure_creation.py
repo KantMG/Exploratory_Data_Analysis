@@ -24,6 +24,7 @@ import dash_bootstrap_components as dbc
 import pandas as pd
 import plotly.io as pio
 import numpy as np
+from collections import Counter
 
 from sklearn.model_selection import train_test_split
 from sklearn import linear_model as lm, tree, neighbors
@@ -36,10 +37,12 @@ from scipy import signal
 from termcolor import colored
 
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import plotly.tools as tls  # For converting Matplotlib to Plotly
 import plotly.graph_objects as go
 import plotly.express as px
 from plotly.subplots import make_subplots
+
 
 import Exploratory_Data_Analysis.function_dataframe as fd
 import Exploratory_Data_Analysis.data_plot_preparation as dpp
@@ -603,8 +606,14 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
    #============================================================================="""
 
 
-def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_column, y_column, z_column, t_column, yf_column, zf_column, tf_column, graph_type, dim_type, reg_type, reg_order, test_size_val=0.2):
-
+def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_column, y_column, z_column, t_column, yf_column, zf_column, tf_column, graph_type, dim_type, 
+                     type_model, ml_tar, ml_size, 
+                     ml_num_fea, ml_num_imp, ml_num_enc,
+                     ml_ode_fea, ml_ode_imp, ml_ode_enc,
+                     ml_ohe_fea, ml_ohe_imp, ml_ohe_enc,
+                     ml_model):
+    
+    
     """
     Goal: Add a trace inside the figure regarding the inputs.
 
@@ -621,9 +630,25 @@ def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_colu
     - tf_column: Function to operate on t_column with the rest of the dataframe
     - graph_type: Type of Graphyque for the figure.
     - dim_type: Graphyque dimension for the figure.
-    - reg_type: Type of regression for the data.
-    - reg_order: Order of the regression for the data.
-    - test_size_val: The ratio of testing value for the fit.
+
+    - type_model: Type of the machine learning problem (Regression/Classification).
+    - ml_tar: The target value.
+    - ml_size: The ratio of testing value for the fit.
+
+    - ml_num_fea: Value for numerical features.
+    - ml_ode_fea: Value for nominal features.
+    - ml_ohe_fea: Value for ordinal features.
+    
+    - ml_num_imp: Imputer for numerical features.
+    - ml_ode_imp: Imputer for nominal features.
+    - ml_ohe_imp: Imputer for ordinal features.
+
+    - ml_num_enc: Encoder for numerical features.
+    - ml_ode_enc: Encoder for nominal features.
+    - ml_ohe_enc: Encoder for ordinal features.
+
+    - ml_model: Model of classification for the data.
+
 
     Returns:
     - fig_json_serializable: Dash figure updated with the trace.
@@ -640,35 +665,16 @@ def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_colu
     colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2'] 
     
     x_axis = x_column
-    y_axis = 'count'
-    z_axis = None
-    t_axis = None
-    if str(y_column)!='None':
-        z_axis = y_column
-    if x_column in df_col_string:
-        x_axis = 'count'
-        y_axis = x_column
+    y_axis = y_column
+    z_axis = z_column
+    t_axis = t_column
 
     if yf_column == "Avg":
-        z_axis = 'avg_' + y_column
-
-    if yf_column == "Avg on the ordinate":
-        x_axis = x_column
         y_axis = 'avg_' + y_column
-        z_axis = 'count'
-        if x_column in df_col_string:
-            x_axis = 'avg_' + y_column
-            y_axis = x_column
-            z_axis = 'count'
-    
-    if z_column is not None and zf_column == "Avg":
-        t_axis = 'avg_' + z_column
-    if z_column is not None and zf_column == "Avg on the ordinate":
-        y_axis = 'avg_' + z_column
-        t_axis = 'count'
-    if z_column is not None and zf_column == "Weight on y":
-        # y_axis = 'sum_' + z_column
-        t_axis = 'standard_error'        
+    if zf_column == "Avg":
+        z_axis = 'avg_' + z_column
+    if tf_column == "Avg":
+        t_axis = 'avg_' + t_column     
 
     ddi.debug_print(("x_axis=", x_axis), debug=Debug)
     ddi.debug_print(("y_axis=", y_axis), debug=Debug)
@@ -680,38 +686,115 @@ def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_colu
 
     # Resetting the index to have a clean index
     data_for_plot.reset_index(drop=True, inplace=True)
-    
-    # Calculate the offset
-    offset = data_for_plot[x_axis].values.min()
-    
-    # Adjust x values by subtracting the minimum value
-    x_offset = data_for_plot[x_axis].values - offset
-    x = x_offset.reshape(-1, 1)
-    y = data_for_plot[y_axis].values.reshape(-1, 1)
-    
-    weights = None
-    if z_column is not None and (zf_column == "Weight on y" or zf_column == "Avg"):
-        if yf_column == "Avg":
-            y = data_for_plot[z_axis].values.reshape(-1, 1)
-        elif yf_column == "Avg on the ordinate":
-            y = data_for_plot[y_axis].values.reshape(-1, 1)
-        weights = data_for_plot[t_axis].values.reshape(-1, 1).flatten()    
-    
-    # Make ML regression
-    mlf.make_regression_model(data_for_plot,x,y,weights,reg_type,reg_order,test_size_val)
 
-    # Plotly figure with the original data and the regression line
-    plotly_fig.add_trace(go.Scatter(
-        x=data_for_plot[x_axis],
-        y=data_for_plot['predicted_count'],
-        mode='lines',
-        name=reg_type if reg_type in ['Linear Regression', 'Decision Tree','k-NN'] else "Poly deg "+str(reg_order),#polynomial_equation,
-        line=dict(dash='dash', width=2)  # Customizing line color and width
-    ))
+            
+    # Make ML classification
+    X, y, preprocessor, ml_model = mlf.make_model(type_model, data_for_plot,
+                                  ml_tar, ml_size, 
+                                  ml_num_fea, ml_num_imp, ml_num_enc,
+                                  ml_ode_fea, ml_ode_imp, ml_ode_enc,
+                                  ml_ohe_fea, ml_ohe_imp, ml_ohe_enc,
+                                  ml_model)
+        
+        
+    if type_model == "Classification" or type_model == "Clustering":
+        
+        X_reduced = X.values
+
+        # Create a meshgrid
+        x_min, x_max = X_reduced[:, 0].min() - 1, X_reduced[:, 0].max() + 1
+        if len(X.columns.tolist())>1:
+            y_min, y_max = X_reduced[:, 1].min() - 1, X_reduced[:, 1].max() + 1
+        if len(X.columns.tolist()) == 3 and dim_type == '3D':
+            z_min, z_max = X_reduced[:, 2].min() - 1, X_reduced[:, 2].max() + 1
+        
+        print(X.columns.tolist())
+        print(len(X.columns.tolist()))
+        
+        if len(X.columns.tolist()) == 1:
+            
+            xx = grid = np.arange(x_min, x_max, 0.01)
+            
+        elif len(X.columns.tolist()) == 2:
+            xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.01),
+                                 np.arange(y_min, y_max, 0.01))
+            # Predict the full grid
+            grid = np.c_[xx.ravel(), yy.ravel()]
+                    
+        elif len(X.columns.tolist()) == 3 and dim_type == '3D':
+            xx, yy, zz = np.meshgrid(np.arange(x_min, x_max, 0.01),
+                                     np.arange(y_min, y_max, 0.01),
+                                     np.arange(z_min, z_max, 0.01))            
+            # Predict the full grid
+            grid = np.c_[xx.ravel(), yy.ravel(), zz.ravel()]
+
+        else:
+            print("Build a PCA", "yellow")
+            return fig_json_serializable, data_for_plot.to_dict(orient='records') 
+        
+        print(grid)
+            
+        # Convert the grid into a pandas DataFrame
+        grid_df = pd.DataFrame(grid, columns=X.columns.tolist())
+        
+        Z = ml_model.predict(preprocessor.fit_transform(grid_df))
+
+        print(Z)        
+        
+        if len(X.columns.tolist()) > 1:
+            # Map class names to unique numeric values for heatmap
+            unique_classes = np.unique(Z)
+            class_map = {cls: idx for idx, cls in enumerate(unique_classes)}
+            Z_numeric = np.vectorize(class_map.get)(Z).reshape(xx.shape)
     
+            # Assuming Z_numeric, xx, yy, and unique_classes are already defined
+            unique_classes = np.unique(data_for_plot[ml_tar])  # Adjust this line if necessary to get unique classes
+            num_classes = len(unique_classes)
+            
+            colorscale = []
+            
+            # Define base colors to include based on the number of unique classes
+            if num_classes >= 1:
+                colorscale.append([0, 'blue'])  # Class 0
+            if num_classes >= 2:
+                colorscale.append([1 / (num_classes - 1), 'red'])  # Class 1
+            if num_classes >= 3:
+                colorscale.append([2 / (num_classes - 1), 'green'])  # Class 2
+            if num_classes >= 4:
+                colorscale.append([3 / (num_classes - 1), 'purple'])  # Class 3
+            if num_classes >= 5:
+                colorscale.append([4 / (num_classes - 1), 'orange'])  # Class 4
+            if num_classes >= 6:
+                colorscale.append([5 / (num_classes - 1), 'pink'])  # Class 5
+
         
+        if len(X.columns.tolist()) == 1:
+            line_trace = go.Scatter(
+                x=xx,
+                y=Z,
+                mode='lines',  # Use 'lines' for a line plot
+                name='CL model',  # Name for the trace
+                line=dict(color='#6B8E23')  # Customize line color if needed
+            )   
+            plotly_fig.add_trace(line_trace) 
+        
+        if len(X.columns.tolist()) == 2:
+            plotly_fig.add_trace(go.Heatmap(
+                z=Z_numeric,
+                x=np.unique(xx[0]),
+                y=np.unique(yy[:, 0]),
+                colorscale=colorscale,
+                opacity=0.5 ,
+                colorbar=dict(title='Classes', tickvals=np.arange(len(unique_classes)), ticktext=unique_classes),
+                hovertemplate='Predicted Class: %{z}<br>Feature 1: %{x}<br>Feature 2: %{y}<extra></extra>',
+                showscale=True
+            ))
+
+    
+    
     fig_json_serializable = plotly_fig.to_dict()
-        
+
+    
     plt.close()
     # =============================================================================
     ddi.debug_print(colored("=============================================================================", "green"), debug=Debug)

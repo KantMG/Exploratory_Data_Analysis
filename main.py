@@ -564,10 +564,15 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
                                                                       "Enter function name", "Enter operation (e.g., A + B)",
                                                                       "Create Function", dark_dropdown_style, uniform_style)
     
-        button_dropdown_regression_tab2 = fds.button_modal_dropdown_and_double_input("regression-"+tab, "Regression model", 
-                                                                                     ["Polynomial Regression", "Decision Tree", "k-NN"], "Enter an order if needed", 
-                                                                                     "Enter a test size ratio (0-1)", "Create regression", dark_dropdown_style, uniform_style)
+        button_dropdown_classification_tab2 = fds.button_modal_board_for_machine_learning(
+            "maclearning-"+tab, "Machine learning model", "Create your Machine learning model",
+            df1.select_dtypes(include=['float64', 'int64']).columns, df1.select_dtypes(include=['object', 'int64']).columns, df1.select_dtypes(include=['object']).columns,
+            "SimpleImputer(strategy = 'mean')", "SimpleImputer(strategy = 'most_frequent')", "SimpleImputer(strategy = 'most_frequent')",
+            "StandardScaler()", "OneHotEncoder(handle_unknown='ignore', sparse_output = False)", "OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1)",
+            ["Classification", "Regression", "Clustering"], "Write your model like: DecisionTreeClassifier()", 0.2, df1.columns,
+            dark_dropdown_style, uniform_style)
     
+
         button_dropdown_smoothing_tab2 = fds.button_modal_dropdown_input("smoothing-"+tab,  "Smoothing", 
                                                                          ["Savitzky-Golay Filter"], "Enter an order if needed",
                                                                          "Select a smoothing function", dark_dropdown_style, uniform_style)
@@ -592,7 +597,7 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
                                          dropdowns_with_labels_for_fig_tab2,
                                          dropdowns_with_labels_for_fig_filter_tab2,
                                          button_dropdown_function_tab2,
-                                         button_dropdown_regression_tab2,
+                                         button_dropdown_classification_tab2,
                                          button_dropdown_smoothing_tab2,
                                          button_subplot_tab2,
                                          button_saving_figure_tab2
@@ -708,18 +713,32 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         ddi.debug_print("", debug=Debug) 
         ddi.debug_print(colored("------------ callback update_x_dropdown_tab2 ------------", "red"), debug=Debug) 
         return [{'label': col, 'value': col} for col in df1.columns if col not in List_col_exclude_tab2]
-    
+        
     #  -----------------------------------------------------------------
     
     @app.callback(
-        Output("modal-regression-tab-2", "is_open"),
-        [Input("open-modal-regression-tab-2", "n_clicks"), Input("submit-button-regression-tab-2", "n_clicks")],
-        [State("modal-regression-tab-2", "is_open")]
+        Output("modal-maclearning-tab-2", "is_open"),
+        [Input("open-modal-maclearning-tab-2", "n_clicks"), Input("submit-button-maclearning-tab-2", "n_clicks"), Input("close-button-maclearning-tab-2", "n_clicks")],
+        [State("modal-maclearning-tab-2", "is_open")]
     )
-    def toggle_modal(open_clicks, submit_clicks, is_open):
-        if open_clicks or submit_clicks:
+    def toggle_modal(open_clicks, submit_clicks, close_clicks, is_open):
+        if open_clicks or submit_clicks or close_clicks:
             return not is_open
         return is_open
+    
+
+    @app.callback(
+        Output("model-maclearning-tab-2", "value"),
+        Input("type-model-maclearning-tab-2", "value")
+    )
+    def update_input_modal(type_model):
+        if type_model == "Regression":
+            return "LinearRegression(*, fit_intercept=True, copy_X=True, n_jobs=None, positive=False)"
+        if type_model == "Classification":
+            return "DecisionTreeClassifier()"
+        if type_model == "Clustering":
+            return "KMeans(n_clusters=3, random_state=42)"
+        return None
     
     #  -----------------------------------------------------------------
     
@@ -1059,8 +1078,8 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
                 return [{'label': col, 'value': col} for col in List_graph_type if col not in ("Histogram", "Curve", "Scatter", "Histogram Movie", "Curve Movie", "Scatter Movie", "Boxes")], None
             if selected_dim == "3D":
                 return [{'label': col, 'value': col} for col in List_graph_type], None
-        return dash.no_update, dash.no_update
-    
+        return dash.no_update, dash.no_update 
+ 
     @app.callback(
         Output('graph-output-tab-2', 'figure'), Output('figure-store-tab-2', 'data'),
         [Input('tabs', 'value'),
@@ -1073,10 +1092,22 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
          Input('Func on t-dropdown-tab-2', 'value'),
          Input('Graph-dropdown-tab-2', 'value'),
          Input('Dim-dropdown-tab-2', 'value'),
-         Input("dropdown-regression-tab-2", "value"),
-         Input("input_1-regression-tab-2", "value"),
-         Input("input_2-regression-tab-2", "value"),
-         Input("submit-button-regression-tab-2", "n_clicks"),
+         
+         Input('type-model-maclearning-tab-2', "value"),
+         Input('target-maclearning-tab-2', "value"),
+         Input('test-size-maclearning-tab-2', "value"),
+         Input('num-features-maclearning-tab-2', "value"),
+         Input('num-imputer-maclearning-tab-2', "value"),
+         Input('num-encoder-maclearning-tab-2', "value"),
+         Input('ode-features-maclearning-tab-2', "value"),
+         Input('ode-imputer-maclearning-tab-2', "value"),
+         Input('ode-encoder-maclearning-tab-2', "value"),
+         Input('ohe-features-maclearning-tab-2', "value"),
+         Input('ohe-imputer-maclearning-tab-2', "value"),
+         Input('ohe-encoder-maclearning-tab-2', "value"),
+         Input('model-maclearning-tab-2', "value"),
+         Input("submit-button-maclearning-tab-2", "n_clicks"),
+         
          Input("dropdown-smoothing-tab-2", "value"),
          Input("input-smoothing-tab-2", "value"),
          Input("submit-button-smoothing-tab-2", "n_clicks"),
@@ -1094,7 +1125,11 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         )
     def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, t_dropdown_value,
                           yfunc_dropdown_value, zfunc_dropdown_value, tfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value,
-                          reg_dropdown_value, reg_order_value, test_size_value, sub_bot_reg_value,
+                          type_model, cla_tar, cla_size, 
+                          cla_num_fea, cla_num_imp, cla_num_enc,
+                          cla_ode_fea, cla_ode_imp, cla_ode_enc,
+                          cla_ohe_fea, cla_ohe_imp, cla_ohe_enc,
+                          cla_model, cla_submit,
                           smt_dropdown_value, smt_order_value, sub_bot_smt_value,
                           nb_subplots, nb_subplots_row, nb_subplots_col,
                           svf_dropdown_value, svf_order_value, sub_bot_svf_value,
@@ -1121,14 +1156,29 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         triggered_id = ctx.triggered[0]['prop_id'].split('.')[0]
         ddi.debug_print(("Triggered component:", triggered_id), debug=Debug) 
         
-        if triggered_id in ["dropdown-regression-tab-2", "input-regression-tab-2", "dropdown-smoothing-tab-2", "input-smoothing-tab-2", "input_1-subplot-tab-2", "input_2-subplot-tab-2", "input_3-subplot-tab-2", "dropdown-save-figure-tab-2", "input-save-figure-tab-2" ]:
+        
+        if triggered_id in ["dropdown-smoothing-tab-2", "input-smoothing-tab-2", "input_1-subplot-tab-2", "input_2-subplot-tab-2", "input_3-subplot-tab-2", "dropdown-save-figure-tab-2", "input-save-figure-tab-2" ]:
             return dash.no_update
+
+
+        if triggered_id in ['type-model-maclearning-tab-2', 'target-maclearning-tab-2',  'test-size-maclearning-tab-2',
+                            'num-features-maclearning-tab-2', 'num-imputer-maclearning-tab-2', 'num-encoder-maclearning-tab-2',
+                            'ode-features-maclearning-tab-2', 'ode-imputer-maclearning-tab-2', 'ode-encoder-maclearning-tab-2',
+                            'ohe-features-maclearning-tab-2', 'ohe-imputer-maclearning-tab-2', 'ohe-encoder-maclearning-tab-2',
+                            'model-maclearning-tab-2']:
+            return dash.no_update
+
     
         df_col_numeric = df1.select_dtypes(include=['float64', 'int64']).columns.tolist()
         df_col_numeric.append('count')
         df_col_all = df1.columns.tolist()
         df_col_all.append('count')
         df_col_string = [col for col in df_col_all if col not in df_col_numeric]   
+
+        ddi.debug_print(("Active Tab=", selected_tab), debug=Debug) 
+        ddi.debug_print(("Time computation=", time.time()-start_time), debug=Debug) 
+    
+        df1_filtered = od.apply_filter(df1, filter_values)
             
         if graph_dropdown_value is None:
             ddi.debug_print("Please select a graphic type.", debug=Debug) 
@@ -1137,12 +1187,17 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         if triggered_id in list([f'fig-dropdown-{col}-tab-2' for col in List_col_tab2]):
             return dash.no_update
     
-        if triggered_id == "submit-button-regression-tab-2":
+        if triggered_id == "submit-button-maclearning-tab-2":
             return update_graph_minor_change_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, t_dropdown_value,
                                                      yfunc_dropdown_value, zfunc_dropdown_value, tfunc_dropdown_value, 
                                                      graph_dropdown_value, dim_dropdown_value,
-                                                     reg_dropdown_value, reg_order_value, test_size_value,
-                                                     current_fig, data_for_plot, df_col_string)
+                                                     type_model, cla_tar, cla_size, 
+                                                     cla_num_fea, cla_num_imp, cla_num_enc,
+                                                     cla_ode_fea, cla_ode_imp, cla_ode_enc,
+                                                     cla_ohe_fea, cla_ohe_imp, cla_ohe_enc,
+                                                     cla_model,
+                                                     current_fig, df1_filtered, df_col_string)
+    
     
         if  triggered_id == "submit-button-save-figure-tab-2":
             fig_json_serializable = go.Figure(current_fig)
@@ -1211,10 +1266,6 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
                 
             
             return dash.no_update
-        ddi.debug_print(("Active Tab=", selected_tab), debug=Debug) 
-        ddi.debug_print(("Time computation=", time.time()-start_time), debug=Debug) 
-    
-        df1_filtered = od.apply_filter(df1, filter_values)
         
         
         ###################### Subplot part ######################
@@ -1333,11 +1384,23 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         fig, data_for_plot = fc.create_figure(filtered_data_graph, df_col_string, x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type, smt_dropdown_value, smt_order_value, sub_bot_smt_value, large_file_memory)
         return fig, data_for_plot
     
-    def update_graph_minor_change_utility(x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type, reg_type, reg_order, test_size_val, fig_json_serializable, data_for_plot, df_col_string):
+    def update_graph_minor_change_utility(x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type, 
+                                          type_model, cla_tar, cla_size, 
+                                          cla_num_fea, cla_num_imp, cla_num_enc,
+                                          cla_ode_fea, cla_ode_imp, cla_ode_enc,
+                                          cla_ohe_fea, cla_ohe_imp, cla_ohe_enc,
+                                          cla_model,
+                                          fig_json_serializable, data_for_plot, df_col_string):
         """
         Utility function to update a graph based on the provided parameters.
         """
-        fig, data_for_plot = fc.figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type, reg_type, reg_order, test_size_val)
+        fig, data_for_plot = fc.figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type,
+                                                 type_model, cla_tar, cla_size, 
+                                                 cla_num_fea, cla_num_imp, cla_num_enc,
+                                                 cla_ode_fea, cla_ode_imp, cla_ode_enc,
+                                                 cla_ohe_fea, cla_ohe_imp, cla_ohe_enc,
+                                                 cla_model
+                                                 )
         return fig, data_for_plot
     
     def update_graph_subplot_creation(x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type,
