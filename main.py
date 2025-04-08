@@ -563,13 +563,14 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         button_dropdown_function_tab2 = fds.button_modal_double_input("function-"+tab,  "Function creation",
                                                                       "Enter function name", "Enter operation (e.g., A + B)",
                                                                       "Create Function", dark_dropdown_style, uniform_style)
-    
+
+        # df1.select_dtypes(include=['float64', 'int64']).columns, df1.select_dtypes(include=['object', 'int64']).columns, df1.select_dtypes(include=['object']).columns,    
         button_dropdown_classification_tab2 = fds.button_modal_board_for_machine_learning(
             "maclearning-"+tab, "Machine learning model", "Create your Machine learning model",
-            df1.select_dtypes(include=['float64', 'int64']).columns, df1.select_dtypes(include=['object', 'int64']).columns, df1.select_dtypes(include=['object']).columns,
+            [],[],[],
             "SimpleImputer(strategy = 'mean')", "SimpleImputer(strategy = 'most_frequent')", "SimpleImputer(strategy = 'most_frequent')",
             "StandardScaler()", "OneHotEncoder(handle_unknown='ignore', sparse_output = False)", "OrdinalEncoder(handle_unknown='use_encoded_value', unknown_value=-1)",
-            ["Classification", "Regression", "Clustering"], "Write your model like: DecisionTreeClassifier()", 0.2, df1.columns,
+            ["Classification", "Regression"], "Write your model like: DecisionTreeClassifier()", 0.2, df1.columns,
             dark_dropdown_style, uniform_style)
     
 
@@ -725,7 +726,83 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         if open_clicks or submit_clicks or close_clicks:
             return not is_open
         return is_open
-    
+
+
+    @app.callback(
+        Output('target-maclearning-tab-2', 'options'),
+        [Input('x-dropdown-tab-2', 'value')]+
+        [Input('y-dropdown-tab-2', 'value')]+
+        [Input('z-dropdown-tab-2', 'value')]+
+        [Input('t-dropdown-tab-2', 'value')]
+    )
+    def update_ml_option_target(selected_x, selected_y, selected_z, selected_t):
+        ddi.debug_print("", debug=Debug) 
+        ddi.debug_print(colored("------------ callback update_ml_option_target ------------", "red"), debug=Debug) 
+
+        # List of selected values
+        selected_values = [selected_x, selected_y, selected_z, selected_t]
+        
+        # Filter out None values
+        non_none_selected = [val for val in selected_values if val in df1.columns]
+
+        return non_none_selected
+
+
+    @app.callback(
+        [Output("target-type-maclearning-tab-2", "options"),
+         Output("num-features-maclearning-tab-2", "options"),
+         Output("ode-features-maclearning-tab-2", "options"),
+         Output("ohe-features-maclearning-tab-2", "options")],
+        Input("target-maclearning-tab-2", "value"),
+        Input("target-maclearning-tab-2", "options")
+    )
+    def update_dropdown_modal(target_value, target_option):
+
+        ddi.debug_print("", debug=Debug) 
+        ddi.debug_print(colored("-------- callback update_dropdown_modal --------", "red"), debug=Debug) 
+        
+        num_fea_option = df1[target_option].select_dtypes(include=['float64', 'int64']).columns
+        ode_fea_option = df1[target_option].select_dtypes(include=['object', 'int64']).columns
+        ohe_fea_option = df1[target_option].select_dtypes(include=['object']).columns
+        
+        tar_typ_option = []
+        if target_value is not None:
+            # Determine the type of target_value and update tar_typ_option
+            if pd.api.types.is_float_dtype(df1[target_value].dtype):
+                tar_typ_option = ["numerical"]
+            elif pd.api.types.is_integer_dtype(df1[target_value].dtype):
+                tar_typ_option = ["numerical", "ordinal"]
+            elif pd.api.types.is_object_dtype(df1[target_value].dtype):
+                tar_typ_option = ["ordinal", "nominal"]       
+        
+            # Remove target_value from num_fea_option if it is present
+            num_fea_option_updated = [option for option in num_fea_option if option != target_value]
+            
+            # Remove target_value from ode_fea_option if it is present
+            ode_fea_option_updated = [option for option in ode_fea_option if option != target_value]
+            
+            # Remove target_value from ohe_fea_option if it is present
+            ohe_fea_option_updated = [option for option in ohe_fea_option if option != target_value]
+            
+            return tar_typ_option, num_fea_option_updated, ode_fea_option_updated, ohe_fea_option_updated        
+
+        else:
+            return dash.no_update, dash.no_update, dash.no_update, dash.no_update
+
+
+    @app.callback(
+        Output("type-model-maclearning-tab-2", "options"),
+        Input("target-type-maclearning-tab-2", "value")
+    )
+    def update_dropdown_model_type_modal(target_type_value):
+                    
+        if target_type_value == "numerical":
+            return ["Regression"]
+        elif target_type_value == "nominal":
+            return ["Classification"]
+        else:
+            return ["Classification", "Regression"]
+
 
     @app.callback(
         Output("model-maclearning-tab-2", "value"),
@@ -733,7 +810,7 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
     )
     def update_input_modal(type_model):
         if type_model == "Regression":
-            return "LinearRegression(*, fit_intercept=True, copy_X=True, n_jobs=None, positive=False)"
+            return "LinearRegression()"
         if type_model == "Classification":
             return "DecisionTreeClassifier()"
         if type_model == "Clustering":
@@ -864,35 +941,8 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
             
             elif selected_x is not None and triggered_id == 'x-dropdown-tab-2' and selected_z is None:
                 return dash.no_update, "count", dash.no_update, dash.no_update
-            
-            
-            # elif selected_x is not None and triggered_id == 'y-dropdown-tab-2' and selected_y is not None and selected_y != "count" and selected_z is None:
-            #     return dash.no_update, dash.no_update, "count", dash.no_update
-    
-            # elif selected_x is not None and triggered_id == 'y-dropdown-tab-2' and selected_y is not None and selected_y != "count" and selected_z is not None and selected_t is None:
-            #     return dash.no_update, dash.no_update, "count", dash.no_update
-    
-            # elif selected_x is not None and triggered_id == 'y-dropdown-tab-2' and selected_y is not None and selected_y != "count" and selected_t is not None:
-            #     return dash.no_update, dash.no_update, "count", dash.no_update
-    
-    
-            # elif selected_x is not None and triggered_id == 'z-dropdown-tab-2'  and selected_z is not None and selected_z != "count" and selected_y != "count" and selected_z != "No count":
-            #     return dash.no_update, dash.no_update, dash.no_update, "count"
-    
-            # elif selected_x is not None and triggered_id == 'z-dropdown-tab-2'  and selected_z is None and selected_y != "count":
-            #     return dash.no_update, "count", dash.no_update, None
-    
-    
-            # elif selected_x is not None and triggered_id == 't-dropdown-tab-2'  and selected_t is not None and selected_t != "count" and selected_t != "No count":
-            #     return dash.no_update, "count", dash.no_update, dash.no_update
-    
-            # elif selected_x is not None and triggered_id == 't-dropdown-tab-2'  and selected_t is None and selected_z != "count" and selected_y != "count":
-            #     return dash.no_update, dash.no_update, "count", dash.no_update
-    
-    
-            
+                        
         return dash.no_update, dash.no_update, dash.no_update, dash.no_update
-    
     
     
     @app.callback(
@@ -1077,7 +1127,7 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
             if selected_dim == "2D":
                 return [{'label': col, 'value': col} for col in List_graph_type if col not in ("Histogram", "Curve", "Scatter", "Histogram Movie", "Curve Movie", "Scatter Movie", "Boxes")], None
             if selected_dim == "3D":
-                return [{'label': col, 'value': col} for col in List_graph_type], None
+                return [{'label': col, 'value': col} for col in ["Scatter"]], None
         return dash.no_update, dash.no_update 
  
     @app.callback(
@@ -1095,6 +1145,7 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
          
          Input('type-model-maclearning-tab-2', "value"),
          Input('target-maclearning-tab-2', "value"),
+         Input('target-type-maclearning-tab-2', "value"),
          Input('test-size-maclearning-tab-2', "value"),
          Input('num-features-maclearning-tab-2', "value"),
          Input('num-imputer-maclearning-tab-2', "value"),
@@ -1125,7 +1176,7 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         )
     def update_graph_tab2(selected_tab, x_dropdown_value, y_dropdown_value, z_dropdown_value, t_dropdown_value,
                           yfunc_dropdown_value, zfunc_dropdown_value, tfunc_dropdown_value, graph_dropdown_value, dim_dropdown_value,
-                          type_model, cla_tar, cla_size, 
+                          type_model, cla_tar, cla_tar_type, cla_size, 
                           cla_num_fea, cla_num_imp, cla_num_enc,
                           cla_ode_fea, cla_ode_imp, cla_ode_enc,
                           cla_ohe_fea, cla_ohe_imp, cla_ohe_enc,
@@ -1161,7 +1212,7 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
             return dash.no_update
 
 
-        if triggered_id in ['type-model-maclearning-tab-2', 'target-maclearning-tab-2',  'test-size-maclearning-tab-2',
+        if triggered_id in ['type-model-maclearning-tab-2', 'target-maclearning-tab-2', 'target-type-maclearning-tab-2',  'test-size-maclearning-tab-2',
                             'num-features-maclearning-tab-2', 'num-imputer-maclearning-tab-2', 'num-encoder-maclearning-tab-2',
                             'ode-features-maclearning-tab-2', 'ode-imputer-maclearning-tab-2', 'ode-encoder-maclearning-tab-2',
                             'ohe-features-maclearning-tab-2', 'ohe-imputer-maclearning-tab-2', 'ohe-encoder-maclearning-tab-2',
@@ -1191,7 +1242,7 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
             return update_graph_minor_change_utility(x_dropdown_value, y_dropdown_value, z_dropdown_value, t_dropdown_value,
                                                      yfunc_dropdown_value, zfunc_dropdown_value, tfunc_dropdown_value, 
                                                      graph_dropdown_value, dim_dropdown_value,
-                                                     type_model, cla_tar, cla_size, 
+                                                     type_model, cla_tar, cla_tar_type, cla_size, 
                                                      cla_num_fea, cla_num_imp, cla_num_enc,
                                                      cla_ode_fea, cla_ode_imp, cla_ode_enc,
                                                      cla_ohe_fea, cla_ohe_imp, cla_ohe_enc,
@@ -1385,7 +1436,7 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         return fig, data_for_plot
     
     def update_graph_minor_change_utility(x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type, 
-                                          type_model, cla_tar, cla_size, 
+                                          type_model, cla_tar, cla_tar_type, cla_size, 
                                           cla_num_fea, cla_num_imp, cla_num_enc,
                                           cla_ode_fea, cla_ode_imp, cla_ode_enc,
                                           cla_ohe_fea, cla_ohe_imp, cla_ohe_enc,
@@ -1395,7 +1446,7 @@ def Run_Exploratory_Data_Analysis(df1: pd.DataFrame, file_name: str, Large_file_
         Utility function to update a graph based on the provided parameters.
         """
         fig, data_for_plot = fc.figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_column, y_column, z_column, t_column, yfunc_column, zfunc_column, tfunc_column, graph_type, dim_type,
-                                                 type_model, cla_tar, cla_size, 
+                                                 type_model, cla_tar, cla_tar_type, cla_size, 
                                                  cla_num_fea, cla_num_imp, cla_num_enc,
                                                  cla_ode_fea, cla_ode_imp, cla_ode_enc,
                                                  cla_ohe_fea, cla_ohe_imp, cla_ohe_enc,

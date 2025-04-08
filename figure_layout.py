@@ -147,10 +147,14 @@ def fig_update_layout(fig_json_serializable, data_for_plot,figname,xlabel,ylabel
                         categoryorder='category ascending',  # Ensures categorical x-values are treated correctly
                     ),
                     zaxis=dict(
-                        title=dict(text='Count', font=dict(size=18, color='white')),
+                        title=dict(text=zlabel, font=dict(size=18, color='white')),  # Y-axis label styling
                         tickmode='array',
-                        tickfont=dict(color='white', size=14)  # Z-axis tick color
-                    )
+                        tickfont=dict(color='white', size=14),  # Y-axis tick color
+                        tickangle=0,  # Rotate the x-axis labels for better readability
+                        showgrid=True,  # Grid styling
+                        gridcolor='gray',  # Grid color
+                        categoryorder='category ascending',  # Ensures categorical x-values are treated correctly
+                    ),
             )
         )
         

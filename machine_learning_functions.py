@@ -75,7 +75,7 @@ import Exploratory_Data_Analysis.app_state as aps
    #=============================================================================
    #============================================================================="""
 
-def make_model(type_model, df, target, ml_test_size,
+def make_model(type_model, df, target, target_type, ml_test_size,
                               ml_num_fea, ml_num_imp, ml_num_enc,
                               ml_ode_fea, ml_ode_imp, ml_ode_enc,
                               ml_ohe_fea, ml_ohe_imp, ml_ohe_enc,
@@ -88,6 +88,7 @@ def make_model(type_model, df, target, ml_test_size,
     - type_model: Typ of the model (Regression/Classification)
     - df: Dataframe.
     - target: Target of the model.
+    - target_type: Nature of the target variable ("numerical", "ordinal", "nominal").
     - ml_test_size: The ratio of testing value for the fit.
 
     - numerical_features: List of features that have numerical values.
@@ -115,7 +116,7 @@ def make_model(type_model, df, target, ml_test_size,
     Debug = aps.Debug
 
     print()
-    print("Make {type_model} model")
+    print(f"Make {type_model} model")
     print()
     
     # Filter for numerical/categorical features
@@ -154,11 +155,17 @@ def make_model(type_model, df, target, ml_test_size,
     
    
     X = df[numerical_features + ode_categorical_features + ohe_categorical_features]
-    y = df[target]
+    # Preprocess target variable
+    if target_type == "ordinal":
+        # If ordinal, apply custom mapping or encoding
+        y = df[target].map({value: index for index, value in enumerate(sorted(df[target].unique()))})
+    elif target_type == "nominal" or target_type == "numerical":
+        y = df[target]
     
     X_preprocessed = preprocessor.fit_transform(X)
     X_train, X_val, y_train, y_val = train_test_split(X_preprocessed, y, test_size=ml_test_size, random_state=42)
     
+    print(X_train, y_train)
     
     ml_model.fit(X_train, y_train)
     
@@ -168,7 +175,7 @@ def make_model(type_model, df, target, ml_test_size,
         get_score_classification(y_val, y_pred)
     elif type_model =="Regression":
         # Get all the errors associated to the model
-        whole_errors_model(y_test, y_pred)        
+        whole_errors_model(y_val, y_pred)        
     
     # evaluation_model(ml_model, X_train, y_train)
     

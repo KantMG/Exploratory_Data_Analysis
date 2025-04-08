@@ -913,7 +913,9 @@ def button_modal_board_for_machine_learning(id_subname, text_button, text_modal,
                 dbc.Label("Target:", style={'fontSize': '24px', 'margin-right': '10px'}),
                 dcc.Dropdown(id='target-' + id_subname, options=target_option,
                              clearable=True, style={'width': f'300px', 'height': '30px', 'boxSizing': 'border-box'}, className='dash-dropdown'),
-            ], style={'display': 'flex', 'margin-left': '40px', 'margin-right': '400px', 'margin-bottom': '10px'}),
+                dcc.Dropdown(id='target-type-' + id_subname, options=["numerical", "ordinal", "nominal"], placeholder="Select type",
+                             clearable=True, style={'width': f'150px', 'height': '30px', 'boxSizing': 'border-box', 'margin-left': '10px'}, className='dash-dropdown'),
+            ], style={'display': 'flex', 'margin-left': '40px', 'margin-right': '300px', 'margin-bottom': '10px'}),
             
             html.Div([
                 dbc.Label("Test Size   :    ", style={'fontSize': '24px', 'margin-right': '10px'}),

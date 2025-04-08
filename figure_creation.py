@@ -33,6 +33,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.metrics import mean_squared_error, r2_score
 from scipy import signal
+from scipy.interpolate import griddata
 
 from termcolor import colored
 
@@ -503,16 +504,32 @@ def figure_plotly(plotly_fig, x_column, y_column, z_column, t_column, yf_column,
         ))
 
                     
-    if d_column == "3D" and g_column == "Histogram":
+    if d_column == "3D":
         
-        # Pivoting the DataFrame to create a grid for surface plot
-        pivoted_data = data_for_plot.pivot(index=y_column, columns=x_column, values='count')
-        # Fill NaN values with zeros or an appropriate value for the surface
-        pivoted_data = pivoted_data.fillna(0)
-        # Now, create the surface plot
+        # if g_column == "Histogram":
+        
+        #     # Pivoting the DataFrame to create a grid for surface plot
+        #     pivoted_data = data_for_plot.pivot(index=y_column, columns=x_column, values='count')
+        #     # Fill NaN values with zeros or an appropriate value for the surface
+        #     pivoted_data = pivoted_data.fillna(0)
+        #     # Now, create the surface plot
+    
+        #     plotly_fig = go.Figure(
+        #         data=[go.Surface(z=pivoted_data.values, x=pivoted_data.columns, y=pivoted_data.index)])
 
-        plotly_fig = go.Figure(
-            data=[go.Surface(z=pivoted_data.values, x=pivoted_data.columns, y=pivoted_data.index)])
+
+
+        if "Scatter" in g_column:
+                        
+            print(x_axis,y_axis,z_axis,t_axis)
+            plotly_fig = px.scatter_3d(
+                data_frame=data_for_plot,
+                x=x_axis,
+                y=y_axis,
+                z=z_axis,
+                color=t_axis if t_axis is not None else None)
+
+
 
     return plotly_fig, data_for_plot, xlabel, ylabel, zlabel, tlabel  
 
@@ -607,7 +624,7 @@ def smoothing_data(sub_bot_smt_value, smt_dropdown_value, smt_order_value, data_
 
 
 def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_column, y_column, z_column, t_column, yf_column, zf_column, tf_column, graph_type, dim_type, 
-                     type_model, ml_tar, ml_size, 
+                     type_model, ml_tar, ml_tar_type, ml_size, 
                      ml_num_fea, ml_num_imp, ml_num_enc,
                      ml_ode_fea, ml_ode_imp, ml_ode_enc,
                      ml_ohe_fea, ml_ohe_imp, ml_ohe_enc,
@@ -633,6 +650,7 @@ def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_colu
 
     - type_model: Type of the machine learning problem (Regression/Classification).
     - ml_tar: The target value.
+    - ml_tar_type: Nature of the target variable ("numerical", "ordinal", "nominal").
     - ml_size: The ratio of testing value for the fit.
 
     - ml_num_fea: Value for numerical features.
@@ -690,14 +708,243 @@ def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_colu
             
     # Make ML classification
     X, y, preprocessor, ml_model = mlf.make_model(type_model, data_for_plot,
-                                  ml_tar, ml_size, 
+                                  ml_tar, ml_tar_type, ml_size, 
                                   ml_num_fea, ml_num_imp, ml_num_enc,
                                   ml_ode_fea, ml_ode_imp, ml_ode_enc,
                                   ml_ohe_fea, ml_ohe_imp, ml_ohe_enc,
                                   ml_model)
+
+        
+    if type_model == "Regression":
+        
+        X_reduced = X.values
+
+        if ml_tar == x_axis and z_axis is None:
+            unique_y = X[y_axis].unique()
+        elif ml_tar == y_axis  and z_axis is None:
+            unique_x = X[x_axis].unique()
+        elif ml_tar == x_axis  and z_axis is not None and t_axis is None:
+            unique_y = X[y_axis].unique()
+            unique_z = X[z_axis].unique()
+        elif ml_tar == y_axis  and z_axis is not None and t_axis is None:
+            unique_x = X[x_axis].unique()
+            unique_z = X[z_axis].unique()
+        elif ml_tar == z_axis and t_axis is None:
+            unique_x = X[x_axis].unique()
+            unique_y = X[y_axis].unique() 
+        elif ml_tar == x_axis and t_axis is not None:
+            unique_y = X[y_axis].unique()
+            unique_z = X[z_axis].unique() 
+            unique_t = X[t_axis].unique() 
+        elif ml_tar == y_axis and t_axis is not None:
+            unique_x = X[x_axis].unique()
+            unique_z = X[z_axis].unique() 
+            unique_t = X[t_axis].unique() 
+        elif ml_tar == z_axis and t_axis is not None:
+            unique_x = X[x_axis].unique()
+            unique_y = X[y_axis].unique() 
+            unique_t = X[t_axis].unique() 
+        elif ml_tar == t_axis:
+            unique_x = X[x_axis].unique()
+            unique_y = X[y_axis].unique() 
+            unique_z = X[z_axis].unique() 
+        
+        nb_linspace = 100
+        # Handling for meshgrid based on types
+        if ml_tar != x_axis:
+            if np.issubdtype(X[x_axis].dtype, np.number):
+                x_min, x_max = X[x_axis].min() - 1, X[x_axis].max() + 1
+                xx = np.linspace(x_min, x_max, nb_linspace)
+            else:
+                xx = unique_x
+        
+        if ml_tar != y_axis:
+            if np.issubdtype(X[y_axis].dtype, np.number):
+                y_min, y_max = X[y_axis].min() - 1, X[y_axis].max() + 1
+                yy = np.linspace(y_min, y_max, nb_linspace)
+            else:
+                yy = unique_y
+
+        if ml_tar != z_axis and z_axis is not None:
+            if np.issubdtype(X[z_axis].dtype, np.number):
+                z_min, z_max = X[z_axis].min() - 1, X[z_axis].max() + 1
+                zz = np.linspace(z_min, z_max, nb_linspace)
+            else:
+                zz = unique_z
+
+        if ml_tar != t_axis and t_axis is not None:
+            if np.issubdtype(X[t_axis].dtype, np.number):
+                t_min, z_max = X[t_axis].min() - 1, X[t_axis].max() + 1
+                tt = np.linspace(t_min, t_max, nb_linspace)
+            else:
+                tt = unique_t
+
+
+        if len(X.columns.tolist()) == 1:
+            if ml_tar != x_axis:
+                grid = xx
+            else:
+                grid = yy
+            
+        elif len(X.columns.tolist()) == 2:
+            
+            if ml_tar == x_axis:
+                grid_y, grid_z = np.meshgrid(yy, zz)
+                # Predict the full grid
+                grid = np.c_[grid_y.ravel(), grid_z.ravel()]
+                
+            if ml_tar == y_axis:
+                grid_x, grid_z = np.meshgrid(xx, zz)
+                # Predict the full grid
+                grid = np.c_[grid_x.ravel(), grid_z.ravel()]     
+                
+            if ml_tar == z_axis:
+                grid_x, grid_y = np.meshgrid(xx, yy)
+                # Predict the full grid
+                grid = np.c_[grid_x.ravel(), grid_y.ravel()]
+
+
+        elif len(X.columns.tolist()) == 3:
+            
+            if ml_tar == x_axis:
+                grid_y, grid_z, grid_t = np.meshgrid(yy, zz, tt)
+                # Predict the full grid
+                grid = np.c_[grid_y.ravel(), grid_z.ravel(), grid_t.ravel()]
+                
+            if ml_tar == y_axis:
+                grid_x, grid_z, grid_t = np.meshgrid(xx, zz, tt)
+                # Predict the full grid
+                grid = np.c_[grid_x.ravel(), grid_z.ravel(), grid_t.ravel()]   
+                
+            if ml_tar == z_axis:
+                grid_x, grid_y, grid_t = np.meshgrid(xx, yy, tt)
+                # Predict the full grid
+                grid = np.c_[grid_x.ravel(), grid_y.ravel(), grid_t.ravel()]
+
+            if ml_tar == t_axis:
+                grid_x, grid_y, grid_z = np.meshgrid(xx, yy, zz)
+                # Predict the full grid
+                grid = np.c_[grid_x.ravel(), grid_y.ravel(), grid_z.ravel()]
+        
+        print(grid)
+            
+        # Convert the grid into a pandas DataFrame
+        # grid_df = pd.DataFrame(grid, columns=[x_col, y_col])
+        grid_df = pd.DataFrame(grid, columns=X.columns.tolist())
+        
+        Z = ml_model.predict(preprocessor.fit_transform(grid_df))
+        
+        df_with_model = grid_df.copy()  # Start with a copy of the grid_df
+        df_with_model['Prediction'] = Z   # Add the predictions as a new column  
         
         
-    if type_model == "Classification" or type_model == "Clustering":
+        print(df_with_model)
+        
+        if (ml_tar == x_axis or ml_tar == y_axis) and t_axis is None:
+            line_trace = px.line(
+                df_with_model, 
+                x='Prediction' if ml_tar == x_axis else x_axis, 
+                y='Prediction' if ml_tar == y_axis else y_axis, 
+                color=z_axis if (z_axis is not None) else None
+                )
+            
+            print(line_trace)
+            for trace in line_trace.data:
+                plotly_fig.add_trace(trace)
+            
+        elif ml_tar == z_axis and t_axis is None:
+        
+            Z_numeric = Z
+
+            heatmap_trace = px.density_heatmap(df_with_model, 
+                                              x=x_axis, 
+                                              y=y_axis, 
+                                              z='Prediction')
+
+            for data in heatmap_trace.data:  # Loop through existing heatmap data
+                plotly_fig.add_trace(data)  # Add each trace to the main figure
+
+
+        elif (ml_tar == x_axis or ml_tar == y_axis or ml_tar == z_axis) and t_axis is not None:
+
+            # Get unique values for the t_axis
+            unique_t_values = df_with_model[t_axis].unique()
+        
+            print(df_with_model)
+            print(unique_t_values)
+
+            
+            color_map = {t_value: color for t_value, color in zip(unique_t_values, colors)}
+
+
+            for t_value in unique_t_values:
+                print(t_value, t_axis)
+                
+                filtered_data_for_plot = data_for_plot[df_with_model[t_axis] == t_value]
+
+                # Filter the DataFrame for the current t_axis value
+                filtered_df = df_with_model[df_with_model[t_axis] == t_value]
+                
+                
+                conditions = []
+                if ml_tar != x_axis:
+                    x_min = filtered_data_for_plot[x_axis].min()
+                    x_max = filtered_data_for_plot[x_axis].max()                    
+                    conditions.append((filtered_df[x_axis] < x_max) & (filtered_df[x_axis] > x_min))
+                
+                if ml_tar != y_axis:
+                    y_min = filtered_data_for_plot[y_axis].min()
+                    y_max = filtered_data_for_plot[y_axis].max()  
+                    conditions.append((filtered_df[y_axis] < y_max) & (filtered_df[y_axis] > y_min))
+
+                if ml_tar != z_axis:
+                    z_min = filtered_data_for_plot[z_axis].min()
+                    z_max = filtered_data_for_plot[z_axis].max()  
+                    conditions.append((filtered_df[z_axis] < z_max) & (filtered_df[z_axis] > z_min))
+                    
+                # Combine all conditions using the AND operator
+                if conditions:
+                    final_condition = conditions[0]
+                    for cond in conditions[1:]:
+                        final_condition &= cond  # Combine conditions
+            
+                    filtered_df = filtered_df[final_condition]
+        
+                # Use x, y for 2D surface plotting
+                x_surface = filtered_df['Prediction' if ml_tar == x_axis else x_axis]
+                y_surface = filtered_df['Prediction' if ml_tar == y_axis else y_axis]
+                z_surface = filtered_df['Prediction' if ml_tar == z_axis else z_axis]  # Predictions corresponding to x and y
+        
+                # Reshape to create a grid for surface plotting
+                unique_x = np.unique(x_surface)
+                unique_y = np.unique(y_surface)
+                
+                # Create a grid of x and y values
+                X_grid, Y_grid = np.meshgrid(unique_x, unique_y)
+        
+                # Interpolate Z values (predictions) over the grid
+                Z_grid = griddata((x_surface, y_surface), z_surface, (X_grid, Y_grid), method='linear')
+        
+                
+                surface_color = color_map[t_value]  
+        
+                # Add surface plot for the current unique t value
+                plotly_fig.add_trace(go.Surface(
+                    z=Z_grid,
+                    x=X_grid,
+                    y=Y_grid,
+                    name=f'Surface for {t_axis} = {t_value}',
+                    # colorscale=[[0, surface_color], [1, surface_color]],
+                    opacity=0.5,
+                    # showscale=True,
+                    hovertemplate=f'{t_axis}: {t_value}<br>Feature 1: %{{x}}<br>Feature 2: %{{y}}<br>Prediction: %{{z}}<extra></extra>'
+                ))
+           
+
+
+
+        
+    if type_model == "Classification":
         
         X_reduced = X.values
 
@@ -716,6 +963,7 @@ def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_colu
             xx = grid = np.arange(x_min, x_max, 0.01)
             
         elif len(X.columns.tolist()) == 2:
+            
             xx, yy = np.meshgrid(np.arange(x_min, x_max, 0.01),
                                  np.arange(y_min, y_max, 0.01))
             # Predict the full grid
@@ -738,10 +986,25 @@ def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_colu
         grid_df = pd.DataFrame(grid, columns=X.columns.tolist())
         
         Z = ml_model.predict(preprocessor.fit_transform(grid_df))
-
-        print(Z)        
         
-        if len(X.columns.tolist()) > 1:
+        df_with_model = grid_df.copy()  # Start with a copy of the grid_df
+        df_with_model['Prediction'] = Z   # Add the predictions as a new column  
+        
+        
+        print(df_with_model)
+        print(ml_tar, x_axis, y_axis, z_axis)
+        
+        if (ml_tar == x_axis or ml_tar == y_axis):
+            line_trace = px.line(
+                df_with_model, 
+                x='Prediction' if ml_tar == x_axis else x_axis, 
+                y='Prediction' if ml_tar == y_axis else y_axis, 
+                color=z_axis if (z_axis is not None and df_with_model[z_axis].dtype == 'object') else None
+                )
+            plotly_fig.add_trace(line_trace.data[0])
+            
+        elif ml_tar == z_axis:
+        
             # Map class names to unique numeric values for heatmap
             unique_classes = np.unique(Z)
             class_map = {cls: idx for idx, cls in enumerate(unique_classes)}
@@ -766,19 +1029,7 @@ def figure_add_trace(fig_json_serializable, data_for_plot, df_col_string, x_colu
                 colorscale.append([4 / (num_classes - 1), 'orange'])  # Class 4
             if num_classes >= 6:
                 colorscale.append([5 / (num_classes - 1), 'pink'])  # Class 5
-
         
-        if len(X.columns.tolist()) == 1:
-            line_trace = go.Scatter(
-                x=xx,
-                y=Z,
-                mode='lines',  # Use 'lines' for a line plot
-                name='CL model',  # Name for the trace
-                line=dict(color='#6B8E23')  # Customize line color if needed
-            )   
-            plotly_fig.add_trace(line_trace) 
-        
-        if len(X.columns.tolist()) == 2:
             plotly_fig.add_trace(go.Heatmap(
                 z=Z_numeric,
                 x=np.unique(xx[0]),
